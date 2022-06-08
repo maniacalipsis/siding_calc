@@ -12,21 +12,6 @@ require_once(ROOT_DIR."/tcpdf-config.php");
 require_once(ROOT_DIR."/TCPDF/tcpdf.php");
 require_once(ROOT_DIR."/pdf_drawing.php");
 
-
-function rnd_bytes($len_)
-{
-   $res="";
-   if (function_exists("random_bytes"))
-      $res=random_bytes($len_);
-   else
-   {
-      $chrs="0123456789abcdef";
-      for ($i=0;$i<$len_;$i++)
-         $rec.=$chrs[(int)rand(0,15)];
-   }
-   return $res_;
-}
-
 function calc_store_results($data_,$res_)
 {
    if ($data_&&$res_)
@@ -48,7 +33,7 @@ function decode_material($material_)
    $res=[
            "name"=>$aliases[$material_["name"]],
            "price"=>(float)$material_["price"],
-           "thikness"=>(float)$material_["n"],
+           "width"=>(float)$material_["h"],
            "max_len"=>(float)$material_["max_len"]
         ];
    return $res;
@@ -65,7 +50,7 @@ function decode_opts($opts_)
    return $res;
 }
 
-function generate_report_text($opts_,$size_,$material_,$panels_,$res_,$contacts_=null,$figures_dump_=null)
+function generate_report_text($opts_,$figures_,$material_,$panels_,$res_,$contacts_=null)
 {
    ob_start();
 ?>
@@ -97,37 +82,44 @@ function generate_report_text($opts_,$size_,$material_,$panels_,$res_,$contacts_
       }
 ?>
 </UL>
+<H3>Исходные параметры</H3>
+<TABLE>
+   <TR><TH>Фигуры</TH><TD><?=$figures_?></TD></TR>
+   <TR><TH>Материал</TH><TD><?=$material_["name"]?>, <?=$material_["width"]?> (<?=$material_["price"]?>р/п.м.)</TD></TR>
+</TABLE>
 <?
-      if ($figures_dump_)
-      {
-         ?>
-<H4>Фигуры</H4>
-<DIV><?=$figures_dump_?></DIV>
-         <?
-      }
+   }
+   else
+   {
+?>
+<H3>Исходные параметры</H3>
+<TABLE>
+   <TR><TH>Материал</TH><TD><?=$material_["name"]?>, <?=$material_["width"]?> (<?=$material_["price"]?>р/п.м.)</TD></TR>
+</TABLE>
+<?
    }
 ?>
-<H2>Расчет</H2>
-<H3>Исходные данные</H3>
-<TABLE CELLSPACING="0" CELLPADDING="5">
-   <TR><TH BORDER="1">Ширина, м</TH><TD BORDER="1"><?=round($size_["w"],FLOAT_PRECISION)?></TD></TR>
-   <TR><TH BORDER="1">Высота, м</TH><TD BORDER="1"><?=round($size_["h"],FLOAT_PRECISION)?></TD></TR>
-   <TR><TH BORDER="1">Материал</TH><TD BORDER="1"><?=$material_["name"]?>, <?=$material_["thikness"]?></TD></TR>
+<H3>Результаты рассчёта</H3>
+<TABLE>
+   <TR><TH>Всего листов:</TH><TD><?=$res_["count"]?></TD></TR>
+   <TR><TH>Количество:</TH><TD><?=$res_["total_s"]?></TD></TR>
+<?
+   if ($opts_["price"])
+   {
+?>
+   <TR><TH>Стоимость:</TH><TD><?=round($res_["total_l"]*$material_["price"],FLOAT_PRECISION)?></TD></TR>
+<?
+   }
+?>
+   <TR><TH>Площадь отходов:</TH><TD><?=round($res_["waste"],FLOAT_PRECISION)?></TD></TR>
 </TABLE>
-<H3>Результаты рассчета</H3>
-<TABLE CELLSPACING="0" CELLPADDING="5">
-   <TR><TH BORDER="1">Количество, шт</TH><TD BORDER="1"><?=$res_["count"]?></TD></TR>
-   <TR><TH BORDER="1">Количество, м.кв</TH><TD BORDER="1"><?=round($res_["total_s"],FLOAT_PRECISION)?></TD></TR>
-   <TR><TH BORDER="1">Площадь отходов, м.кв</TH><TD BORDER="1"><?=round($res_["waste"],FLOAT_PRECISION)?></TD></TR>
-</TABLE>
-<H3>Спецификация</H3>
-<TABLE CELLSPACING="0" CELLPADDING="5">
-   <TR><TH BORDER="1">Панель, м</TH><TH BORDER="1">Количество, шт</TH></TR>
+<H4>Панели</H4>
+<TABLE>
 <?
    foreach ($panels_ as $panel)
    {
 ?>
-   <TR><TD BORDER="1"><?=round((float)$panel["length"],FLOAT_PRECISION)?></TD><TD BORDER="1"><?=(int)$panel["cnt"]?></TD></TR>
+   <TR><TD><?=round((float)$panel["length"],FLOAT_PRECISION)?>м</TD><TD><?=(int)$panel["cnt"]?>шт.</TD></TR>
 
 <?
    }
@@ -143,9 +135,7 @@ function email_to_admin()
 {
    $opts=decode_opts($_REQUEST["opts"]);
    $contacts=array_map(htmlspecialchars,$_REQUEST["contacts"]);
-   $figures_dump="";//htmlspecialchars(json_encode($_REQUEST["figures"],JSON_ENCODE_OPTIONS));
-   $b_box=bounding_box($_REQUEST["figures"],false);
-   $size=["w"=>$b_box["rt"]["x"]-$b_box["lb"]["x"],"h"=>$b_box["rt"]["y"]-$b_box["lb"]["y"]];
+   $figures=htmlspecialchars(json_encode($_REQUEST["figures"],JSON_ENCODE_OPTIONS));
    $material=decode_material($_REQUEST["material"]);
    $calc_results=[
                     "count"=>(int)$_REQUEST["res"]["count"],
@@ -156,14 +146,13 @@ function email_to_admin()
    
    $recipients=ADMIN_EMAIL;
    $subj="Расчет раскладки";
-   $text=generate_report_text($opts,$size,$material,$_REQUEST["res"]["panels"],$calc_results,$contacts,$figures_dump);
-   $attachments=[["tmp_name"=>__DIR__."/output/".date("Ymd-His-").bin2hex(rnd_bytes(5)).".pdf","name"=>"siding.pdf"]];
-   generate_pdf($opts,$_REQUEST["figures"],$_REQUEST["res"]["scans"],$text,[],[],$attachments[0]["tmp_name"]);
+   $text=generate_report_text($opts,$figures,$material,$_REQUEST["res"]["panels"],$calc_results,$contacts);
+   $attachments=[["tmp_name"=>__DIR__."/output/".date("Ymd-His-").bin2hex(random_bytes(5)),"name"=>"siding.pdf"]];
+   generate_pdf($opts,$_REQUEST["figures"],$_REQUEST["res"]["scans"],$text,$attachments[0]["tmp_name"]);
    
    $res=send_email($recipients,$subj,$text,$attachments,MAIL_SENDER);
    
-   if ($res)   //DEBUG condition
-      unlink($attachments[0]["tmp_name"]);
+   unlink($attachments[0]["tmp_name"]);
    
    return $res;
 }
@@ -171,8 +160,8 @@ function email_to_admin()
 function email_to_user()
 {
    $opts=decode_opts($_REQUEST["opts"]);
-   $b_box=bounding_box($_REQUEST["figures"],false);
-   $size=["w"=>$b_box["rt"]["x"]-$b_box["lb"]["x"],"h"=>$b_box["rt"]["y"]-$b_box["lb"]["y"]];
+   $contacts=array_map(htmlspecialchars,$_REQUEST["contacts"]);
+   $figures=htmlspecialchars(json_encode($_REQUEST["figures"],JSON_ENCODE_OPTIONS));
    $material=decode_material($_REQUEST["material"]);
    $calc_results=[
                     "count"=>(int)$_REQUEST["res"]["count"],
@@ -183,19 +172,18 @@ function email_to_user()
    
    $recipients=trim(explode(",",$_REQUEST["contacts"]["email"])[0]); //Deny to make massive emailing
    $subj="Расчет раскладки";
-   $text=generate_report_text($opts,$size,$material,$_REQUEST["res"]["panels"],$calc_results);
-   $attachments=[["tmp_name"=>__DIR__."/output/".date("Ymd-His-").bin2hex(rnd_bytes(5)).".pdf","name"=>"siding.pdf"]];
-   generate_pdf($opts,$_REQUEST["figures"],$_REQUEST["res"]["scans"],$text,PDF_PREAMBLE,["text"=>PDF_ADS_TEXT,"image"=>PDF_ADS_IMAGE],$attachments[0]["tmp_name"]);
+   $text=generate_report_text($opts,$figures,$material,$_REQUEST["res"]["panels"],$calc_results);
+   $attachments=[["tmp_name"=>__DIR__."/output/".date("Ymd-His-").bin2hex(random_bytes(5)),"name"=>"siding.pdf"]];
+   generate_pdf($opts,$_REQUEST["figures"],$_REQUEST["res"]["scans"],$text,$attachments[0]["tmp_name"]);
    
    $res=send_email($recipients,$subj,$text,$attachments,MAIL_SENDER);
    
-   if ($res)   //DEBUG condition
-      unlink($attachments[0]["tmp_name"]);
+   unlink($attachments[0]["tmp_name"]);
    
    return $res;
 }
 
-function generate_pdf($opts_,$figures_,$scans_,$text_,$preamble_=[],$ads_=[],$out_path_="")
+function generate_pdf($opts_,$figures_,$scans_,$text_,$out_path_="")
 {
    $pdf=new TCPDF(PDF_PAGE_ORIENTATION,PDF_UNIT,PDF_PAGE_FORMAT,true,"UTF-8",false);
 
@@ -226,44 +214,15 @@ function generate_pdf($opts_,$figures_,$scans_,$text_,$preamble_=[],$ads_=[],$ou
    // set image scale factor
    $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
    
-   //Create page with preamble -----------------------------------------------------
-   if ($preamble_&&$preamble_["path"]&&file_exists($preamble_["path"]))
-   {
-      $pdf->SetDrawColor(PDF_TEXT_COLOR[0],PDF_TEXT_COLOR[1],PDF_TEXT_COLOR[2]);
-      $pdf->SetLineWidth(PDF_FIGURE_STROKE["all"]["width"]);
-      $pdf->SetTextColor(PDF_TEXT_COLOR[0],PDF_TEXT_COLOR[1],PDF_TEXT_COLOR[2]);
-      $pdf->SetFontSize(PDF_FONT_SIZE_MAIN);
-      
-      $pdf->AddPage(PDF_PAGE_ORIENTATION,PDF_PAGE_FORMAT,true);
-      
-      $text=file_get_contents($preamble_["path"]);
-      $pdf->writeHTMLCell($preamble_["w"],$preamble_["h"],$preamble_["x"],$preamble_["y"],$text,0,1,0,true,"",true);
-   }
-   
    //Create page with drawing -----------------------------------------------------
    if ($opts_["drawing"])
    {
-      $pdf->SetDrawColor(PDF_TEXT_COLOR[0],PDF_TEXT_COLOR[1],PDF_TEXT_COLOR[2]);
-      $pdf->SetLineWidth(PDF_FIGURE_STROKE["all"]["width"]);
-      $pdf->SetTextColor(PDF_TEXT_COLOR[0],PDF_TEXT_COLOR[1],PDF_TEXT_COLOR[2]);
-      $pdf->SetFontSize(PDF_FONT_SIZE_MAIN);
-      
       $pdf->AddPage(PDF_DRAWING_PAGE_ORIENTATION,PDF_DRAWING_PAGE_FORMAT,true);
-      
-      $pdf->writeHTMLCell(PDF_DRAWING_TITLE["w"],PDF_DRAWING_TITLE["h"],PDF_DRAWING_TITLE["x"],PDF_DRAWING_TITLE["y"],PDF_DRAWING_TITLE["title"],0,1,0,true,"",true);
       
       //$pdf->SetLineStyle(PDF_FIGURE_STROKE);
       //$pdf->SetFillColor(PDF_FIGURE_FILL);
       
       $b_box=bounding_box($figures_,true);
-      foreach ($scans_ as $scan) //if scans are wide, they may significantly outstand from the figure sizes.
-         foreach ($scan as $stripe)
-         {
-            if ($stripe["rect"]["rt"]["y"]>$b_box["rt"]["y"])
-               $b_box["rt"]["y"]=$stripe["rect"]["rt"]["y"];
-            if ($stripe["rect"]["rt"]["x"]>$b_box["rt"]["x"])
-               $b_box["rt"]["x"]=$stripe["rect"]["rt"]["x"];
-         }
       $tr_vect=translation_vector($b_box,PDF_DRAWING_AREA);
       //dumpr($figures_);
       //dumpr($b_box);
@@ -286,26 +245,8 @@ function generate_pdf($opts_,$figures_,$scans_,$text_,$preamble_=[],$ads_=[],$ou
    $pdf->SetLineWidth(PDF_FIGURE_STROKE["all"]["width"]);
    $pdf->SetTextColor(PDF_TEXT_COLOR[0],PDF_TEXT_COLOR[1],PDF_TEXT_COLOR[2]);
    $pdf->SetFontSize(PDF_FONT_SIZE_MAIN);
-   
    $pdf->AddPage(PDF_PAGE_ORIENTATION,PDF_PAGE_FORMAT,true);
-   
-   $pdf->writeHTMLCell(PDF_INFO_AREA["w"],PDF_INFO_AREA["h"],PDF_INFO_AREA["x"],PDF_INFO_AREA["y"],$text_,0,1,0,true,"",true);
-
-   //Create page with advertising -----------------------------------------------------
-   if ($ads_["text"]||$ads_["image"])
-   {
-      $pdf->AddPage(PDF_PAGE_ORIENTATION,PDF_PAGE_FORMAT,true);
-      if ($ads_["text"]["path"]&&file_exists($ads_["text"]["path"]))
-      {
-         $text=file_get_contents($ads_["text"]["path"]);
-         $pdf->writeHTMLCell($ads_["text"]["w"],$ads_["text"]["h"],$ads_["text"]["x"],$ads_["text"]["y"],$text,0,1,0,true,"",true);
-      }
-      if ($ads_["image"]["path"]&&file_exists($ads_["image"]["path"]))
-      {
-         $pdf->setJPEGQuality(75);
-         $pdf->Image($ads_["image"]["path"],$ads_["image"]["x"],$ads_["image"]["y"],$ads_["image"]["w"],$ads_["image"]["h"],"","TC",true,$ads_["image"]["dpi"]);
-      }
-   }
+   $pdf->writeHTMLCell(0,0,"","",$text_,0,1,0,true,"",true);
    
    //Output resulting file
    $pdf->Output($out_path_,"F");
@@ -371,7 +312,6 @@ else
       document.addEventListener('DOMContentLoaded',initDrawer);
       document.addEventListener('DOMContentLoaded',initCheckboxes);
       document.addEventListener('DOMContentLoaded',initRadios);
-      document.addEventListener('DOMContentLoaded',InitNumericInputs);
    </SCRIPT>
    <DIV CLASS="steps_bar flex"></DIV>
    <DIV CLASS="drawer flex x-stretch">
@@ -381,7 +321,6 @@ else
       </DIV>
       <DIV CLASS="scrollbox y">
          <DIV CLASS="toolbox flex col x-stretch"></DIV>
-         <DIV CLASS="hint_bar flex col x-stretch"></DIV>
       </DIV>
    </DIV>
 </BODY>

@@ -25,7 +25,7 @@ class Drawer
       this.style={stroke:'#1A5EB3',fill:'#C8D3E6'};                                 //Drawing style (current FG and BG colors)
       this.crosshairStyle={radius:-1,color:'rgba(56,80,125,1)'};                    //Crosshair style
       this.gridStyle={radius:3,minSpacing:10,factor:10,color:'rgba(0,0,0,0.15)'};   //Grid style
-      this.axesStyle={radius:-1,color:'rgba(200,211,248,1)',textColor:'rgba(100,141,196,1)'};   //Axes style
+      this.axesStyle={radius:-1,color:'rgba(200,211,248,1)'};                       //Axes style
       this.background='#FFFFFF';                                                    //Background
       this.zoomStep=2;        //Step of zoom
       this.gridSize=0.1;      //Grid size in meters
@@ -34,8 +34,7 @@ class Drawer
       this.showAxes=true;     //Axes visibility.
       this.showNormals=false; //Show normals of polyline segments
       this.showSizes=1;       //Show sizes of: 1 - selected figures, 2 - all figures
-      this.showVertCoords=1;  //Show coordinates of figure verticles: 1 - figure under cursor, 2 - selected figures, 3 - all figures
-      this.precision=2;       //Precision of displaying values
+      this.precision=3;       //Precision of displaying values
       this.ppm=81/25.4*1000;  //Scaling factor (px per meter)
       this.unitsFactor=1;     //Native units is a meters. unitsFactor allows to display values in mm, cm, km etc.
       
@@ -507,77 +506,6 @@ class Drawer
       }
    }
    
-   paintVertCoords(canvas_,figures_)
-   {
-      figures_=(figures_ instanceof Array ? figures_ : (figures_ ? [figures_] : []));
-      if (figures_.length>0)
-      {
-         var context=canvas_.getContext('2d');
-         var color='#646464';
-         var textSize=Math.max(Math.floor(Math.min(8+(150*this._zoomLevel),40)*0.75),9);  //px - text size
-         var textOffs=2+Math.min(Math.floor(50*this._zoomLevel),5);   //px - text offset above line
-         context.fillStyle=color;
-         context.font=textSize+'px sans-serif';
-         
-         for (var figure of figures_)
-         {
-            var points=[];
-            var center=false;
-            switch (figure.type)
-            {
-               case 'polyline':
-               {
-                  points=figure.points;
-                  var box=pointsBoundingBox(figure.points);
-                  if (box)
-                     center=midPoint(box.lb,box.rt);
-                  
-                  break;
-               }
-               case 'compound':
-               {
-                  for (var subPts of figure.polyLines)
-                     points=points.concat(subPts);
-                  
-                  var box=pointsBoundingBox(points);
-                  if (box)
-                     center=midPoint(box.lb,box.rt);
-                  
-                  break;
-               }
-               case 'rect':
-               default:
-               {
-                  var rect=(figure.rect ? figure.rect : figure);
-                  if (rectType(rect))
-                  {
-                     points.push(rect.lb);
-                     points.push({x:rect.lb.x,y:rect.rt.y});
-                     points.push(rect.rt);
-                     points.push({x:rect.rt.x,y:rect.lb.y});
-                     var rect=rectCorners(rect);
-                     if (rect)
-                        center=midPoint(rect.lb,rect.rt);
-                  }
-               }
-            }
-            
-            if (points&&points.length>0&&center)
-               for (var pt of points)
-               {
-                  //Position the text near the point
-                  context.textAlign=(pt.x<center.x ? 'right' : (pt.x==center.x ? 'center' : 'left'));
-                  var xOffs=(pt.x<center.x ? -textOffs : (pt.x==center.x ? 0 : textOffs));
-                  var yOffs=(pt.y<center.y ? textOffs+textSize : (pt.y==center.y ? 0 : -textOffs));
-                  
-                  //Draw coordinates
-                  var pos=this.pointToCanvas(pt);
-                  context.fillText('('+roundVal(pt.x)+','+roundVal(pt.y)+')',pos.x+xOffs,pos.y+yOffs);
-               }
-         }
-      }
-   }
-   
    paintSizes(canvas_,figures_)
    {
       figures_=(figures_ instanceof Array ? figures_ : (figures_ ? [figures_] : []));
@@ -745,14 +673,7 @@ class Drawer
       {
          var pos=this.pointToCanvas({x:0,y:0});
          if ((pos.x>=0&&pos.x<=this._underlay.width)||(pos.y>=0&&pos.y<=this._underlay.height))
-         {
-            this.paintCross(this._underlay,pos,this.axesStyle,true); //Axes lines
-            context.fillStyle=this.axesStyle.textColor;
-            context.font='bold 14px sans-serif';
-            context.textAlign='right';
-            context.fillText('X',this._underlay.width-10,pos.y+5+14);  //5px fron axis line, 10px from viewport right
-            context.fillText('Y',pos.x-5,10+14); //5px fron axis line, 10px from viewport top
-         }
+            this.paintCross(this._underlay,pos,this.axesStyle,true);
       }
    }
    
@@ -780,13 +701,7 @@ class Drawer
       {
          this.paintSizes(this._overlay,(this.showSizes==2 ? this.figures : this.selection));
       }
-      
-      //Paint verticle coords
-      if (this.showVertCoords)
-      {
-         this.paintVertCoords(this._overlay,(this.showVertCoords==3 ? this.figures : (this.showVertCoords==2 ? this.selection : this.figuresAtPoint(this._cursor))));
-      }
-      
+         
       //Tool paint overlay
       if (this.activeTool&&this.activeTool.onRepaintOverlay)
          this.activeTool.onRepaintOverlay(this._overlay);
@@ -1372,142 +1287,123 @@ class Drawer
    
    onKeyPress(e_)
    {
-      //var ret=true;
-      //
-      ////Call tool listener
-      //if (this.activeTool&&this.activeTool.onKeyPress)
-      //   ret=this.activeTool.onKeyPress(e_);
-      //
-      //if (ret===false)
-      //   return cancelEvent(e_);
+      var ret=true;
+      
+      //Call tool listener
+      if (this.activeTool&&this.activeTool.onKeyPress)
+         ret=this.activeTool.onKeyPress(e_);
+      
+      if (ret===false)
+         return cancelEvent(e_);
    }
    
    onKeyDown(e_)
    {
-      //var ret=true;
-      //
-      //switch (e_.key)
-      //{
-      //   case ' '://Spacebar
-      //   {
-      //      var delta={x:-this.cursor.x,y:-this.cursor.y};
-      //      this.moveFigures(this._figures,delta);
-      //      delta.x=-delta.x;
-      //      delta.y=delta.y;
-      //      this.pan(delta);
-      //      this.cursor={x:0,y:0};
-      //      
-      //      ret=false;
-      //   }
-      //}
-      //
-      ////Call tool listener
-      //if (this.activeTool&&this.activeTool.onKeyDown)
-      //   ret=(this.activeTool.onKeyDown(e_)!==false)&&ret;
-      //
-      //console.log('ret',ret);
-      //if (ret===false)
-      //   return cancelEvent(e_);
+      var ret=true;
+      
+      switch (e_.key)
+      {
+         case ' '://Spacebar
+         {
+            var delta={x:-this.cursor.x,y:-this.cursor.y};
+            this.moveFigures(this._figures,delta);
+            delta.x=-delta.x;
+            delta.y=delta.y;
+            this.pan(delta);
+            this.cursor={x:0,y:0};
+            
+            ret=false;
+         }
+      }
+      
+      //Call tool listener
+      if (this.activeTool&&this.activeTool.onKeyDown)
+         ret=(this.activeTool.onKeyDown(e_)!==false)&&ret;
+      
+      console.log('ret',ret);
+      if (ret===false)
+         return cancelEvent(e_);
    }
    
    onKeyUp(e_)
    {
-      //var ret=true;
-      //
-      ////Call tool listener
-      //if (this.activeTool&&this.activeTool.onKeyUp)
-      //   ret=this.activeTool.onKeyUp(e_);
-      //
-      //if (ret===false)
-      //   return cancelEvent(e_);
+      var ret=true;
+      
+      //Call tool listener
+      if (this.activeTool&&this.activeTool.onKeyUp)
+         ret=this.activeTool.onKeyUp(e_);
+      
+      if (ret===false)
+         return cancelEvent(e_);
    }
    
    onMouseMove(e_)
    {      
-      //if (!((e_.buttons&0b100)||(this._panTool&&(e_.buttons&0b001))))
-      //   this._panStart=null;
-      //
-      //if (this._panStart)
-      //{
-      //   var delta={x:e_.layerX-this._panStart.x,y:e_.layerY-this._panStart.y};
-      //   this._panStart={x:e_.layerX,y:e_.layerY};
-      //   this.pan(delta,true);
-      //}
-      //else
-      //   this.setCursor({x:e_.layerX,y:e_.layerY},true);
-      //
-      ////Call tool listener
-      //if (!this._panTool)
-      //   if (this.activeTool&&this.activeTool.onMouseMove)
-      //      this.activeTool.onMouseMove(e_);
-      //
-      //return cancelEvent(e_);
+      if (!((e_.buttons&0b100)||(this._panTool&&(e_.buttons&0b001))))
+         this._panStart=null;
+      
+      if (this._panStart)
+      {
+         var delta={x:e_.layerX-this._panStart.x,y:e_.layerY-this._panStart.y};
+         this._panStart={x:e_.layerX,y:e_.layerY};
+         this.pan(delta,true);
+      }
+      else
+         this.setCursor({x:e_.layerX,y:e_.layerY},true);
+      
+      //Call tool listener
+      if (!this._panTool)
+         if (this.activeTool&&this.activeTool.onMouseMove)
+            this.activeTool.onMouseMove(e_);
+      
+      return cancelEvent(e_);
    }
    
    onClick(e_)
    {
-      //Show message about that the viewport is viewonly.
-      var mess=document.getElementById('viewport_inactive_message');
-      if (!mess)
-      {
-         this._paintBox.style.display='flex';
-         this._paintBox.style.flexFlow='row';
-         this._paintBox.style.justifyContent='center';
-         this._paintBox.style.alignItems='center';
-         mess=buildNodes({tagName:'div',id:'viewport_inactive_message',style:{padding:'1em 0.75em',color:'#175EB6',fontWeight:'bold',textAlign:'center',background:'none #FFFFFF',boxShadow:'5px 5px 10px rgba(0,0,0,0.6)',zIndex:10},textContent:'Заполните, пожалуйста, поля справа ',childNodes:[{tagName:'span',style:{fontSize:'300%',verticalAlign:'middle',color:'#175EB6'},textContent:'➧'}]});
-         this._paintBox.appendChild(mess);
-      }
-      else
-         mess.classList.remove('hidden');
+      //Call tool listener
+      if (this.activeTool&&this.activeTool.onClick)
+         this.activeTool.onClick(e_);
       
-      var sender=this;
-      if (this.__interval)
-         clearInterval(this.__interval);
-      
-      this.__interval=setTimeout(function(){var mess=document.getElementById('viewport_inactive_message'); if (mess) mess.classList.add('hidden');},3000);
-      ////Call tool listener
-      //if (this.activeTool&&this.activeTool.onClick)
-      //   this.activeTool.onClick(e_);
-      //
-      //return cancelEvent(e_);
+      return cancelEvent(e_);
    }
    
    onMouseDown(e_)
    {
-      //if ((e_.buttons&0b100)||(this._panTool&&(e_.buttons&0b001)))
-      //   this._panStart={x:e_.layerX,y:e_.layerY};
-      //
-      ////Call tool listener
-      //if (!this._panTool)
-      //   if (this.activeTool&&this.activeTool.onMouseDown)
-      //      this.activeTool.onMouseDown(e_);
-      //
-      //return cancelEvent(e_);
+      if ((e_.buttons&0b100)||(this._panTool&&(e_.buttons&0b001)))
+         this._panStart={x:e_.layerX,y:e_.layerY};
+      
+      //Call tool listener
+      if (!this._panTool)
+         if (this.activeTool&&this.activeTool.onMouseDown)
+            this.activeTool.onMouseDown(e_);
+      
+      return cancelEvent(e_);
    }
    
    onMouseUp(e_)
    {
-      //if ((e_.button==1)||(this._panTool&&(e_.button==0)))
-      //   this._panStart=null;
-      //
-      ////Call tool listener
-      //if (!this._panTool)
-      //   if (this.activeTool&&this.activeTool.onMouseUp)
-      //      this.activeTool.onMouseUp(e_);
-      //   
-      //return cancelEvent(e_);
+      if ((e_.button==1)||(this._panTool&&(e_.button==0)))
+         this._panStart=null;
+      
+      //Call tool listener
+      if (!this._panTool)
+         if (this.activeTool&&this.activeTool.onMouseUp)
+            this.activeTool.onMouseUp(e_);
+         
+      return cancelEvent(e_);
    }
    
    onWheel(e_)
    {
-      //var ort=mouseWheelOrt(e_);
-      //this.zoom=this.zoom*(ort<0 ? this.zoomStep : 1/this.zoomStep);
-      //
-      ////Call tool listener
-      //if (this.activeTool&&this.activeTool.onWheel)
-      //   this.activeTool.onWheel(e_);
-      //
-      //return cancelEvent(e_);
+      var ort=mouseWheelOrt(e_);
+      this.zoom=this.zoom*(ort<0 ? this.zoomStep : 1/this.zoomStep);
+      
+      //Call tool listener
+      if (this.activeTool&&this.activeTool.onWheel)
+         this.activeTool.onWheel(e_);
+      
+      return cancelEvent(e_);
    }
    
    getToolByName(name_)

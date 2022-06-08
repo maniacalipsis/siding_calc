@@ -38,7 +38,7 @@ class StepsTool extends Tool
       this._step=0;
       this._farestStep=0;
       this._maxSteps=7;
-      this._figureType='';
+      this._figureType='rect';
       
       this._figuresSwap=null;
       this._selectedCut=null;
@@ -47,13 +47,14 @@ class StepsTool extends Tool
       //Init steps selector
       this._stepSelectors=[];
       var stpStructs=[
-                        {tagName:'div',className:'sel enabled',childNodes:[{tagName:'span',textContent:'1. Фигура'}],dataset:{step:0}},
+                        {tagName:'div',className:'sel',childNodes:[{tagName:'span',textContent:'1. Фигура'}],dataset:{step:0}},
                         {tagName:'div',childNodes:[{tagName:'span',textContent:'2. Размер'}],dataset:{step:1}},
                         {tagName:'div',childNodes:[{tagName:'span',textContent:'3. Вырез'}],dataset:{step:2}},
                         {tagName:'div',childNodes:[{tagName:'span',textContent:'4. Размер выреза'}],dataset:{step:3}},
                         {tagName:'div',childNodes:[{tagName:'span',textContent:'5. Раскладка'}],dataset:{step:4}},
                         {tagName:'div',childNodes:[{tagName:'span',textContent:'6. Выбор материала'}],dataset:{step:5}},
                         {tagName:'div',childNodes:[{tagName:'span',textContent:'7. Результат'}],dataset:{step:6}},
+                        {tagName:'div',childNodes:[{tagName:'span',textContent:'8. Контакты'}],dataset:{step:7}}
                      ];
       for (var stpStruct of stpStructs)
          this._stepSelectors.push(buildNodes(stpStruct));
@@ -65,24 +66,6 @@ class StepsTool extends Tool
             stpSel.addEventListener('click',function(e_){sender.step=parseInt(this.dataset.step);});
             stepsBar.appendChild(stpSel);
          }
-      
-      this._hintBlocks=[];
-      var hintStructs=[
-                         {tagName:'div',className:'hint sel',innerHTML:'Выберите фигуру поверхности, на которую нужно укладывать материал (фасад, кровля, стена)'},
-                         {tagName:'div',className:'hint',innerHTML:'Введите размеры фигуры поверхности, на которую нужно укладывать материал (фасад, кровля, стена)'},
-                         {tagName:'div',className:'hint',innerHTML:'Выберите фигуру выреза (оконный/дверного проем, арка)'},
-                         {tagName:'div',className:'hint',innerHTML:'Введите размеры фигуры выреза (оконного/дверного проема, арки)'},
-                         {tagName:'div',className:'hint',innerHTML:'Выберите направление раскладки (ориентация панели в процессе монтажа)'},
-                         {tagName:'div',className:'hint',innerHTML:''},
-                         {tagName:'div',className:'hint',innerHTML:''},
-                      ];
-      for (var hintStruct of hintStructs)
-         this._hintBlocks.push(buildNodes(hintStruct));
-      
-      var hintBar=document.querySelector('.hint_bar');
-      if (hintBar)
-         for (var hintBlk of this._hintBlocks)
-            hintBar.appendChild(hintBlk);
       
       //Create tool panel
       var struct={
@@ -146,7 +129,7 @@ class StepsTool extends Tool
       if ((0<=val_)&&(val_<=this._maxSteps))
          this._step=val_;
       
-      if (this._step>this._farestStep) //Disallow random acess to the steps that wasn't reached sequentially.
+      if (this._step>this._farestStep)
          this._farestStep=this._step;
       
       //Force step to very start if there is no figures was drawed
@@ -158,14 +141,7 @@ class StepsTool extends Tool
       
       //Update direct step selectors
       for (var i=0;i<this._stepSelectors.length;i++)
-      {
          this._stepSelectors[i].classList.toggle('sel',i==this._step);
-         this._stepSelectors[i].classList.toggle('enabled',i<=this._farestStep);
-      }
-      
-      //Update hint blocks
-      for (var i=0;i<this._hintBlocks.length;i++)
-         this._hintBlocks[i].classList.toggle('sel',i==this._step);
       
       //Toggle between resulting compound figure and separate source figures
       if (this._step<4)
@@ -219,12 +195,11 @@ class StepsTool extends Tool
             var figures=this.parent.figures;
             if (figures.length==0)
             {
-               if (this._figureType)
-               {
-                  this.parent.style.fill='#C8D3E6';
-                  tool=this.parent.getToolByName(this._figureType);
-               }
-               else this.step=0;
+               if (this._figureType=='')
+                  this._figureType='rect';
+               
+               this.parent.style.fill='#C8D3E6';
+               tool=this.parent.getToolByName(this._figureType);
             }
             else
             {
@@ -283,7 +258,6 @@ class StepsTool extends Tool
                tool.toolPanel.classList.remove('material');
                tool.toolPanel.classList.remove('result');
                tool.toolPanel.classList.remove('contacts');
-               tool.toolPanel.classList.remove('final');
                tool.toolPanel.classList.add('layout');
                this.parent.activeTool=tool;
                
@@ -303,7 +277,6 @@ class StepsTool extends Tool
                tool.toolPanel.classList.remove('layout');
                tool.toolPanel.classList.remove('result');
                tool.toolPanel.classList.remove('contacts');
-               tool.toolPanel.classList.remove('final');
                tool.toolPanel.classList.add('material');
                this.parent.activeTool=tool;
                
@@ -323,7 +296,6 @@ class StepsTool extends Tool
                tool.toolPanel.classList.remove('layout');
                tool.toolPanel.classList.remove('material');
                tool.toolPanel.classList.remove('contacts');
-               tool.toolPanel.classList.remove('final');
                tool.toolPanel.classList.add('result');
                this.parent.activeTool=tool;
                
@@ -340,7 +312,6 @@ class StepsTool extends Tool
                tool.toolPanel.classList.remove('layout');
                tool.toolPanel.classList.remove('material');
                tool.toolPanel.classList.remove('result');
-               tool.toolPanel.classList.remove('final');
                tool.toolPanel.classList.add('contacts');
                this.parent.activeTool=tool;
                
@@ -511,8 +482,8 @@ class RectTool extends FigureTool
                                      tagName:'div',
                                      className:'opts size',
                                      childNodes:[
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ширина:'},{tagName:'input',type:'number',name:'rect[w]',step:0.01,value:0},'м']},
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Высота:'},{tagName:'input',type:'number',name:'rect[h]',step:0.01,value:0},'м']}
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ширина:'},{tagName:'input',type:'number',name:'rect[w]',step:0.001,value:0},'м']},
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Высота:'},{tagName:'input',type:'number',name:'rect[h]',step:0.001,value:0},'м']}
                                                 ]
                                   },
                                   {
@@ -523,7 +494,7 @@ class RectTool extends FigureTool
                                                    {tagName:'label',childNodes:[{tagName:'span',textContent:'Расстояние от цоколя:'},{tagName:'input',type:'number',name:'rect[y]',step:0.01,value:0},'м']}
                                                 ]
                                   },
-                                  {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'link add_cut',value:'Добавить вырез'},{tagName:'br'},{tagName:'input',type:'button',className:'alt prev',value:'Назад'},{tagName:'input',type:'button',className:'next',value:'Далее'}]}
+                                  {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад'},{tagName:'input',type:'button',className:'add_cut',value:'Добавить вырез'},{tagName:'input',type:'button',className:'next',value:'Далее'}]}
                                ]
                  };
       this._toolPanel=buildNodes(struct);
@@ -541,7 +512,7 @@ class RectTool extends FigureTool
       this.btnPrev=this._toolPanel.querySelector('.panel.rect input[type=button].prev');
       this.btnAdd=this._toolPanel.querySelector('.panel.rect input[type=button].add_cut');
       this.btnNext=this._toolPanel.querySelector('.panel.rect input[type=button].next');
-      this.btnPrev.addEventListener('click',function(e_){var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){sender.parent.activeTool=stepsTool; stepsTool.step--; this.blur();}});
+      this.btnPrev.addEventListener('click',function(e_){var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; this.blur();}});
       this.btnAdd.addEventListener('click',function(e_){if (sender.figure&&sender.testRect(sender.figure.rect)&&sender._isNew) sender.parent.addFigure(sender.figure);  sender.figure=null; var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; this.blur();}});
       this.btnNext.addEventListener('click',function(e_){if (sender.figure&&sender.testRect(sender.figure.rect)&&sender._isNew) sender.parent.addFigure(sender.figure);  sender.figure=null; var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; this.blur();}});
       
@@ -819,9 +790,9 @@ class TriangleTool extends FigureTool
                                      tagName:'div',
                                      className:'opts size',
                                      childNodes:[
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ш:'},{tagName:'input',type:'number',name:'triangle[w]',step:0.01,value:0},'м']},
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'В:'},{tagName:'input',type:'number',name:'triangle[h]',step:0.01,value:0},'м']},
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'С:'},{tagName:'input',type:'number',name:'triangle[c]',step:0.01,value:0},'м']}
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ш:'},{tagName:'input',type:'number',name:'triangle[w]',step:0.001,value:0},'м']},
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'В:'},{tagName:'input',type:'number',name:'triangle[h]',step:0.001,value:0},'м']},
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'С:'},{tagName:'input',type:'number',name:'triangle[c]',step:0.001,value:0},'м']}
                                                 ]
                                   },
                                   {
@@ -1048,10 +1019,10 @@ class TrapezoidTool extends FigureTool
                                      tagName:'div',
                                      className:'opts size',
                                      childNodes:[
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ш:'},{tagName:'input',type:'number',name:'trapezoid[w]',step:0.01,value:0},'м']},
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'В:'},{tagName:'input',type:'number',name:'trapezoid[h]',step:0.01,value:0},'м']},
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ш'},{tagName:'sub',textContent:'2'},{tagName:'span',textContent:':'},{tagName:'input',type:'number',name:'trapezoid[w2]',step:0.01,value:0},'м']},
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'С:'},{tagName:'input',type:'number',name:'trapezoid[c]',step:0.01,value:0},'м']}
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ш:'},{tagName:'input',type:'number',name:'trapezoid[w]',step:0.001,value:0},'м']},
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'В:'},{tagName:'input',type:'number',name:'trapezoid[h]',step:0.001,value:0},'м']},
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ш'},{tagName:'sub',textContent:'2'},{tagName:'span',textContent:':'},{tagName:'input',type:'number',name:'trapezoid[w2]',step:0.001,value:0},'м']},
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'С:'},{tagName:'input',type:'number',name:'trapezoid[c]',step:0.001,value:0},'м']}
                                                 ]
                                   },
                                   {
@@ -1292,8 +1263,8 @@ class PolyLineTool extends FigureTool
                                                                         tagName:'div',
                                                                         className:'point',
                                                                         childNodes:[
-                                                                                      {tagName:'label',childNodes:[{tagName:'span',textContent:'X:'},{tagName:'input',type:'number',name:'point[x]',step:0.01,value:0}]},
-                                                                                      {tagName:'label',childNodes:[{tagName:'span',textContent:'Y:'},{tagName:'input',type:'number',name:'point[y]',step:0.01,value:0}]},
+                                                                                      {tagName:'label',childNodes:[{tagName:'span',textContent:'X:'},{tagName:'input',type:'number',name:'point[x]',step:0.001,value:0}]},
+                                                                                      {tagName:'label',childNodes:[{tagName:'span',textContent:'Y:'},{tagName:'input',type:'number',name:'point[y]',step:0.001,value:0}]},
                                                                                       {tagName:'input',className:'tool ok add',type:'button',value:'+',title:'Add'},
                                                                                       {tagName:'input',className:'tool clr',type:'button',value:'✕',title:'Delete'}
                                                                                    ],

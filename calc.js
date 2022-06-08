@@ -20,7 +20,6 @@ class CalcTool extends Tool
       this._columns=[];
       
       this._material='';
-      this._matThickness=0;
       this._price=0;
       
       //public props
@@ -59,35 +58,66 @@ class CalcTool extends Tool
                                                    }
                                                 ]
                                   },
+                                  //{
+                                  //   tagName:'div',
+                                  //   className:'opts layout',
+                                  //   childNodes:[
+                                  //                 {
+                                  //                    tagName:'div',
+                                  //                    childNodes:[
+                                  //                                  {tagName:'label',childNodes:[{tagName:'span',textContent:'Смещение:'},{tagName:'input',type:'number',name:'offset',min:-this._cutHeight,max:this._cutHeight,step:0.01,value:0},{tagName:'span',className:'unit',textContent:' м'}]}
+                                  //                               ]
+                                  //                 },
+                                  //                 {
+                                  //                    tagName:'div',
+                                  //                    className:'group',
+                                  //                    childNodes:[
+                                  //                                  {tagName:'label',childNodes:[{tagName:'span',textContent:'Макс. длина:'},{tagName:'input',type:'number',name:'max_len',min:0.01,step:0.001,value:14},{tagName:'span',className:'unit',textContent:' м'}]}
+                                  //                               ]
+                                  //                 },
+                                  //                 
+                                  //                 
+                                  //              ]
+                                  //},
                                   {tagName:'h2',className:'material',textContent:'Шаг 6. Выбор материала'},
                                   {
                                      tagName:'div',
                                      className:'opts material',
                                      childNodes:[
                                                    {tagName:'h3',textContent:'Сэндвич панели МВ:'},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent: '80мм'},{tagName:'input',type:'radio',name:'material',value:'mv,0.080,100,1.000,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'100мм'},{tagName:'input',type:'radio',name:'material',value:'mv,0.100,100,1.000,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'120мм'},{tagName:'input',type:'radio',name:'material',value:'mv,0.120,100,1.000,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'200мм'},{tagName:'input',type:'radio',name:'material',value:'mv,0.200,100,1.000,14'}]},
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent: '80мм'},{tagName:'input',type:'radio',name:'material',value:'mv,100,0.080,14'}]},
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'100мм'},{tagName:'input',type:'radio',name:'material',value:'mv,100,0.100,14'}]},
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'120мм'},{tagName:'input',type:'radio',name:'material',value:'mv,100,0.120,14'}]},
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'200мм'},{tagName:'input',type:'radio',name:'material',value:'mv,100,0.200,14'}]},
                                                    {tagName:'hr'},
                                                    {tagName:'h3',textContent:'Сэндвич панели ПП:'},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent: '60мм'},{tagName:'input',type:'radio',name:'material',value:'pp,0.060,101,1.000,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent: '80мм'},{tagName:'input',type:'radio',name:'material',value:'pp,0.080,101,1.000,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'100мм'},{tagName:'input',type:'radio',name:'material',value:'pp,0.100,101,1.000,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'120мм'},{tagName:'input',type:'radio',name:'material',value:'pp,0.120,101,1.000,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'200мм'},{tagName:'input',type:'radio',name:'material',value:'pp,0.200,101,1.000,14'}]},
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent: '60мм'},{tagName:'input',type:'radio',name:'material',value:'pp,101,0.060,14'}]},
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent: '80мм'},{tagName:'input',type:'radio',name:'material',value:'pp,101,0.080,14'}]},
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'100мм'},{tagName:'input',type:'radio',name:'material',value:'pp,101,0.100,14'}]},
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'120мм'},{tagName:'input',type:'radio',name:'material',value:'pp,101,0.120,14'}]},
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'200мм'},{tagName:'input',type:'radio',name:'material',value:'pp,101,0.200,14'}]},
                                                    {tagName:'hr'},
                                                    {tagName:'h3',textContent:'Сэндвич панели ППу:'},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent: '60мм'},{tagName:'input',type:'radio',name:'material',value:'ppu,0.060,102,1.000,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'100мм'},{tagName:'input',type:'radio',name:'material',value:'ppu,0.100,102,1.000,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'120мм'},{tagName:'input',type:'radio',name:'material',value:'ppu,0.120,102,1.000,14'}]}
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent: '60мм'},{tagName:'input',type:'radio',name:'material',value:'ppu,102,0.060,14'}]},
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'100мм'},{tagName:'input',type:'radio',name:'material',value:'ppu,102,0.100,14'}]},
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'120мм'},{tagName:'input',type:'radio',name:'material',value:'ppu,102,0.120,14'}]}
                                                 ]
                                   },
-                                  {tagName:'h2',className:'result',textContent:'Шаг 7. Результат'},
+                                  {tagName:'h2',className:'result',textContent:'Шаг 7. Получить результат'},
                                   {
                                      tagName:'div',
                                      className:'result p',
                                      childNodes:[
+                                                   {
+                                                      tagName:'div',
+                                                      className:'options opts',
+                                                      childNodes:[
+                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Спецификация'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'spec',checked:true}]},
+                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Чертеж раскладки'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'drawing',checked:true}]},
+                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Оптимизация раскладки'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'optimize'}]},
+                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Расчет стоимости'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'price',checked:true}]}
+                                                                 ]
+                                                   },
                                                    {
                                                       tagName:'div',
                                                       className:'lengths group',
@@ -121,63 +151,49 @@ class CalcTool extends Tool
                                                                     {tagName:'span',className:'value',id:'calc_res_waste',textContent:'0'},
                                                                     {tagName:'span',className:'unit',innerHTML:' м<sup>2</sup>'},
                                                                  ]
-                                                   },
-                                                   {tagName:'h3',className:'result',textContent:'Получить результат'},
-                                                   {
-                                                      tagName:'div',
-                                                      className:'options opts',
-                                                      childNodes:[
-                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Спецификация'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'spec',checked:true}]},
-                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Чертеж раскладки'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'drawing',checked:true}]},
-                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Оптимизация раскладки'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'optimize'}]},
-                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Расчет стоимости'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'price',className:'req_price'}]}
-                                                                 ]
-                                                   },
-                                                   {tagName:'h3',textContent:'Контактные данные'},
-                                                   {tagName:'p',childNodes:[{tagName:'b',textContent:'Важно!'},' Чертёж, спецификацию и расчет стоимости мы отправим вам на указанный адрес. Пожалуйста, используйте актуальные данные.']},
-                                                   {
-                                                      tagName:'div',
-                                                      className:'contact opts',
-                                                      childNodes:[
-                                                                    {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'Ваше имя'},{tagName:'input',type:'text',name:'contacts[name]',dataset:{required:1},value:''}]},
-                                                                    {tagName:'label',className:'phone',childNodes:[{tagName:'span',textContent:'Телефон'},{tagName:'input',type:'text',name:'contacts[phone]',dataset:{required:0},value:''}]},
-                                                                    {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'E-mail'},{tagName:'input',type:'text',name:'contacts[email]',dataset:{required:1},value:''}]}
-                                                                 ]
-                                                   },
-                                                   {tagName:'div',className:'message p hidden'},
+                                                   }
                                                 ]
                                   },
+                                  {tagName:'h2',className:'contacts',textContent:'Шаг 8. Контактные данные'},
+                                  {tagName:'p',className:'contacts',childNodes:[{tagName:'b',textContent:'Важно!'},' Чертёж, спецификацию и расчет стоимости мы отправим вам на указанный адрес. Пожалуйста, используйте актуальные данные.']},
+                                  {
+                                     tagName:'div',
+                                     className:'contacts opts',
+                                     childNodes:[
+                                                   {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'Ваше имя'},{tagName:'input',type:'text',name:'contacts[name]',value:''}]},
+                                                   {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'Телефон'},{tagName:'input',type:'text',name:'contacts[phone]',value:''}]},
+                                                   {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'E-mail'},{tagName:'input',type:'text',name:'contacts[email]',value:''}]}
+                                                ]
+                                  },
+                                  {tagName:'p',className:'message hidden'},
                                   {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад'},{tagName:'input',type:'button',className:'next',value:'Далее'},{tagName:'input',type:'button',className:'send',value:'Получить'}]},
-                                  //{tagName:'div',className:'nav final',childNodes:[{tagName:'input',type:'button',className:'alt final_prev',value:'Назад'}]}
                                ]
                  };
       this._toolPanel=buildNodes(struct);
       
       this.inputs.dir=this._toolPanel.querySelectorAll('.panel.calc input[name=\'direction\']');
       this.inputs.colStep=this._toolPanel.querySelector('.panel.calc input[name=\'step\']');
-      
+      //this.inputs.offset=this._toolPanel.querySelector('.panel.calc input[name=\'offset\']');
+      //this.inputs.cutHeight=this._toolPanel.querySelector('.panel.calc input[name=\'cut_height\']');
+      //this.inputs.maxLength=this._toolPanel.querySelector('.panel.calc input[name=\'max_len\']');
       this.contactInputs=sender._toolPanel.querySelectorAll('input[name^=contacts]');
       this.inputs.mat=this._toolPanel.querySelectorAll('.panel.calc input[name=\'material\']');
       this.btnPrev=this._toolPanel.querySelector('.panel.calc input[type=button].prev');
       this.btnNext=this._toolPanel.querySelector('.panel.calc input[type=button].next');
       this.btnSend=this._toolPanel.querySelector('.panel.calc input[type=button].send');
-      //this.btnFinalPrev=this._toolPanel.querySelector('.panel.calc input[type=button].final_prev');
       
       for (var radio of this.inputs.dir)
          radio.addEventListener('click',function(e_){sender.cutAxis=this.value; this.blur();});
       this.inputs.colStep.addEventListener('input',function(e_){var val=parseCompleteFloat(this.value); if (!isNaN(val)&&val>0.01){sender.colStep=val; sender.calcFilling();}});
+      //this.inputs.offset.addEventListener('input',function(e_){var val=parseCompleteFloat(this.value); if (!isNaN(val)){sender.cutOffset=val; sender.calcFilling();}});
+      //this.inputs.cutHeight.addEventListener('input',function(e_){var val=parseCompleteFloat(this.value); if (!isNaN(val)&&val>0.01){sender.cutHeight=val; sender.calcFilling();}});
+      //this.inputs.maxLength.addEventListener('input',function(e_){var val=parseCompleteFloat(this.value); if (!isNaN(val)&&val>0.01){sender.stripeMaxLength=val; sender.calcFilling();}});
       
-      this.inputs.mat[0].checked=true;
-      sender.material=this.inputs.mat[0].value;
       for (var radio of this.inputs.mat)
          radio.addEventListener('click',function(e_){sender.material=this.value; this.blur();});
       
-      var checkbox=this._toolPanel.querySelector('input.req_price');   //Require phone number only if price calculation was requested
-      if (checkbox)
-         checkbox.addEventListener('click',function(e_){var inp=sender._toolPanel.querySelector('.phone input'); if (inp) inp.dataset.required=(this.checked ? '1' : '0'); var span=sender._toolPanel.querySelector('.phone span'); if (span) span.classList.toggle('req',this.checked );});
-      
       for (var inp of this.contactInputs)
-         inp.addEventListener('input',function(e_){this.classList.toggle('invalid',(this.dataset.required==1)&&(this.value==''));});
+         inp.addEventListener('input',function(e_){this.classList.toggle('invalid',this.value=='');});
       
       this.btnPrev.addEventListener('click',function(e_){var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; this.blur();}});
       this.btnNext.addEventListener('click',function(e_){var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; this.blur();}});
@@ -188,7 +204,7 @@ class CalcTool extends Tool
                                                          for (var inp of sender.contactInputs)
                                                          {
                                                             contacts[/\[([a-z]+)\]/i.exec(inp.name)[1]]=inp.value;
-                                                            var invalid=((inp.dataset.required==1)&&(inp.value==''));
+                                                            var invalid=(inp.value=='');
                                                             inp.classList.toggle('invalid',invalid);
                                                             if (invalid)
                                                                errCnt++;
@@ -205,7 +221,7 @@ class CalcTool extends Tool
                                                                   for (var points of figure.polyLines)
                                                                      figure.style.modes.push(isNormalsOutside(points) ? 'add' : 'cut');
                                                                }
-                                                            var data={figures:figures,material:{name:sender._material,n:sender._matThickness,price:sender._price,h:sender._cutHeight,max_len:sender._stripeMaxLength},res:sender.calculationData,opts:[],contacts:contacts}; 
+                                                            var data={figures:figures,material:{name:sender._material,price:sender._price,h:sender._cutHeight,max_len:sender._stripeMaxLength},res:sender.calculationData,opts:[],contacts:contacts}; 
                                                             var optInpts=sender._toolPanel.querySelectorAll('input[name^=res_opts]');
                                                             for (var inp of optInpts)
                                                                if (inp.checked)
@@ -214,7 +230,7 @@ class CalcTool extends Tool
                                                             messBlk.classList.remove('error');
                                                             messBlk.classList.remove('success');
                                                             messBlk.classList.add('hidden');
-                                                            reqServerPost('',data,function(ans_){/*sender._toolPanel.classList.remove('contacts'); sender._toolPanel.classList.add('final');*/ if (messBlk){var ok=ans_.status=='success'; messBlk.classList.remove('hidden'); messBlk.classList.toggle('error',!ok); messBlk.classList.toggle('success',ok); messBlk.innerHTML=(ok ? '<H2>Успешно!</H2> На указанный адрес отправлено письмо с результатами расчета.' : '<H2>Ошибка:</H2>'+ans_.errors.join('<br>'));}},function(ans_){var messBlk=sender._toolPanel.querySelector('.message'); if (messBlk){messBlk.classList.remove('hidden'); messBlk.classList.remove('success'); messBlk.classList.add('error'); messBlk.textContent='Не удалось отправить данные.';}});
+                                                            reqServerPost('',data,function(ans_){if (messBlk){var ok=ans_.status=='success'; messBlk.classList.remove('hidden'); messBlk.classList.toggle('error',!ok); messBlk.classList.toggle('success',ok); messBlk.innerHTML=(ok ? 'На указанный адрес отправлено письмо с результатами расчета.' : '<b>Ошибка:</b><br>'+ans_.errors.join('<br>'));}},function(ans_){var messBlk=sender._toolPanel.querySelector('.message'); if (messBlk){messBlk.classList.remove('hidden'); messBlk.classList.remove('success'); messBlk.classList.add('error'); messBlk.textContent='Не удалось отправить данные.';}});
                                                          }
                                                          else
                                                          {
@@ -224,7 +240,6 @@ class CalcTool extends Tool
                                                             messBlk.innerHTML='Пожалуйста, заполните все наобходимые поля.';
                                                          }
                                                         });
-      //this.btnFinalPrev.addEventListener('click',function(e_){sender._toolPanel.classList.remove('final'); sender._toolPanel.classList.add('contacts'); var messBlk=sender._toolPanel.querySelector('.message'); if (messBlk){messBlk.classList.remove('success'); messBlk.classList.remove('error'); messBlk.classList.add('hidden'); messBlk.innerHTML='';}});
       
       //Load params
       var val=getCookie('siding_calc_axis');
@@ -335,10 +350,9 @@ class CalcTool extends Tool
    {
       var mat=val_.split(',');
       this._material=mat[0];
-      this._matThickness=mat[1];
-      this._price=mat[2];
-      this.cutHeight=mat[3];
-      this.stripeMaxLength=mat[4];
+      this._price=mat[1];
+      this.cutHeight=mat[2];
+      this.stripeMaxLength=mat[3];
    }
    
    //private methods
@@ -422,7 +436,7 @@ class CalcTool extends Tool
                   context.font=textSize+'px sans-serif';
                   context.textAlign='center';
                   context.fillStyle=color;
-                  context.fillText(stripe.l.toFixed(this.parent.precision),pt.x,pt.y);
+                  context.fillText(roundVal(stripe.l),pt.x,pt.y);
                }
       }
    }
