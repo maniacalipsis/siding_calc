@@ -1,4 +1,4 @@
-<?
+<?php
 function points_bounding_box($points_)
 {
    $res=["lb"=>array_shift($points_)];

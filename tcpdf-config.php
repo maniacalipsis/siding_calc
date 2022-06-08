@@ -1,4 +1,4 @@
-<?
+<?php
 
 define ('K_TCPDF_EXTERNAL_CONFIG', true);
 define ('K_PATH_MAIN', $_SERVER["DOCUMENT_ROOT"].'/TCPDF/');

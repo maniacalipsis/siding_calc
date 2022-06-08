@@ -60,7 +60,7 @@ function generate_report_text($opts_,$figures_,$material_,$panels_,$res_,$contac
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
 </HEAD>
 <BODY>
-<?
+<?php
    if ($contacts_)
    {
 ?>
@@ -72,13 +72,13 @@ function generate_report_text($opts_,$figures_,$material_,$panels_,$res_,$contac
 </TABLE>
 <H3>Запрос</H3>
 <UL>
-<?
+<?php
       foreach ($opts_ as $opt)
       {
 ?>
    <LI><?=$opt?></LI>
 
-<?
+<?php
       }
 ?>
 </UL>
@@ -87,7 +87,7 @@ function generate_report_text($opts_,$figures_,$material_,$panels_,$res_,$contac
    <TR><TH>Фигуры</TH><TD><?=$figures_?></TD></TR>
    <TR><TH>Материал</TH><TD><?=$material_["name"]?>, <?=$material_["width"]?> (<?=$material_["price"]?>р/п.м.)</TD></TR>
 </TABLE>
-<?
+<?php
    }
    else
    {
@@ -96,38 +96,38 @@ function generate_report_text($opts_,$figures_,$material_,$panels_,$res_,$contac
 <TABLE>
    <TR><TH>Материал</TH><TD><?=$material_["name"]?>, <?=$material_["width"]?> (<?=$material_["price"]?>р/п.м.)</TD></TR>
 </TABLE>
-<?
+<?php
    }
 ?>
 <H3>Результаты рассчёта</H3>
 <TABLE>
    <TR><TH>Всего листов:</TH><TD><?=$res_["count"]?></TD></TR>
    <TR><TH>Количество:</TH><TD><?=$res_["total_s"]?></TD></TR>
-<?
+<?php
    if ($opts_["price"])
    {
 ?>
    <TR><TH>Стоимость:</TH><TD><?=round($res_["total_l"]*$material_["price"],FLOAT_PRECISION)?></TD></TR>
-<?
+<?php
    }
 ?>
    <TR><TH>Площадь отходов:</TH><TD><?=round($res_["waste"],FLOAT_PRECISION)?></TD></TR>
 </TABLE>
 <H4>Панели</H4>
 <TABLE>
-<?
+<?php
    foreach ($panels_ as $panel)
    {
 ?>
    <TR><TD><?=round((float)$panel["length"],FLOAT_PRECISION)?>м</TD><TD><?=(int)$panel["cnt"]?>шт.</TD></TR>
 
-<?
+<?php
    }
 ?>
 </TABLE>
 </BODY>
 </HTML>
-<?
+<?php
    return ob_get_clean();
 }
 

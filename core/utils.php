@@ -1,4 +1,4 @@
-<?
+<?php
 /*==================================*/
 /* The Pattern Engine Version 3.0   */
 /* Copyright: FSG a.k.a ManiaC      */
