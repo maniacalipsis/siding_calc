@@ -1,0 +1,44 @@
+<!DOCTYPE HTML>
+<HTML LANG="ru">
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<META NAME="HandheldFriendly" CONTENT="true">
+<META NAME="viewport" CONTENT="width=device-width, initial-scale=1">
+<META NAME="robots" CONTENT="index, follow">
+<META NAME="description" CONTENT="[[page_description]]">
+<META NAME="keywords" CONTENT="[[page_keywords]]">
+<TITLE>SidingCalc</TITLE>
+<LINK REL="icon" HREF="/favicon.png" TYPE="image/png">
+<LINK REL="stylesheet" HREF="/main.css" TYPE="text/css">
+<SCRIPT SRC="/core/js_utils.js"></SCRIPT>
+<SCRIPT SRC="/graph_utils.js"></SCRIPT>
+<SCRIPT SRC="/tools.js"></SCRIPT>
+<SCRIPT SRC="/calc.js"></SCRIPT>
+<SCRIPT SRC="/drawer.js"></SCRIPT>
+</HEAD>
+<BODY>
+   <SCRIPT>
+      function initDrawer()
+      {
+         var drawerTools=[
+                            SelectionTool,
+                            HandPanTool,
+                            RectTool,
+                            PolyLineTool,
+                            CalcTool
+                         ];
+         window.drawer=new Drawer({mainBox:document.querySelector('.drawer'),size:{w:1024,h:540},tools:drawerTools});
+      }
+      document.addEventListener('DOMContentLoaded',initDrawer);
+   </SCRIPT>
+   <DIV CLASS="drawer flex x-stretch">
+      <DIV CLASS="main_panel flex col x-stretch">
+         <DIV CLASS="paintbox"></DIV>
+         <DIV CLASS="statusbar flex"></DIV>
+      </DIV>
+      <DIV CLASS="scrollbox y">
+         <DIV CLASS="toolbox flex"></DIV>
+      </DIV>
+   </DIV>
+</BODY>
+</HTML>
