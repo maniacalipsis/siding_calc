@@ -43,7 +43,6 @@ class StepsTool extends Tool
       this._figuresSwap=null;
       this._selectedCut=null;
       
-      var sender=this;
       //Init steps selector
       this._stepSelectors=[];
       var stpStructs=[
@@ -63,7 +62,7 @@ class StepsTool extends Tool
       if (stepsBar)
          for (var stpSel of this._stepSelectors)
          {
-            stpSel.addEventListener('click',function(e_){sender.step=parseInt(this.dataset.step);});
+            stpSel.addEventListener('click',(e_)=>{this.step=parseInt(e_.target.dataset.step);});
             stepsBar.appendChild(stpSel);
          }
       
@@ -79,10 +78,10 @@ class StepsTool extends Tool
                                      tagName:'div',
                                      className:'figure_sel flex around',
                                      childNodes:[
-                                                   {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'rect'     ,className:'rect'     ,onclick:function(e_){sender._figureType='rect'; sender.step++;}},'Прямоугольник']},
-                                                   {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'trapezoid',className:'trapezoid',onclick:function(e_){sender._figureType='trapezoid'; sender.step++;}},'Трапеция']},
-                                                   {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'triangle' ,className:'triangle' ,onclick:function(e_){sender._figureType='triangle'; sender.step++;}},'Треугольник']},
-                                                   {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'polyline' ,className:'polyline' ,onclick:function(e_){sender._figureType='polyline'; sender.step++;}},'Произвольная фигура']}
+                                                   {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'rect'     ,className:'rect'     ,onclick:(e_)=>{this._figureType='rect'; this.step++;}},'Прямоугольник']},
+                                                   {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'trapezoid',className:'trapezoid',onclick:(e_)=>{this._figureType='trapezoid'; this.step++;}},'Трапеция']},
+                                                   {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'triangle' ,className:'triangle' ,onclick:(e_)=>{this._figureType='triangle'; this.step++;}},'Треугольник']},
+                                                   {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'polyline' ,className:'polyline' ,onclick:(e_)=>{this._figureType='polyline'; this.step++;}},'Произвольная фигура']}
                                                 ]
                                   },
                                   {
@@ -93,7 +92,7 @@ class StepsTool extends Tool
                                                    {tagName:'div',className:'figure_sel flex'}
                                                 ]
                                   },
-                                  {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад',onclick:function(e_){sender.step--;}},{tagName:'input',type:'button',value:'Далее',onclick:function(e_){sender.step++;}}]}
+                                  {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад',onclick:(e_)=>{this.step--;}},{tagName:'input',type:'button',value:'Далее',onclick:(e_)=>{this.step++;}}]}
                                ]
                  };
       this._toolPanel=buildNodes(struct);
@@ -101,6 +100,14 @@ class StepsTool extends Tool
       //Cuts selector
       this._cutsPanel=this._toolPanel.querySelector('.cuts');
       this._cutsContainer=this._cutsPanel.querySelector('.figure_sel');
+   }
+   
+   onReady()
+   {
+      //Recall figures:
+      this._parent.figures=this._parent.getToolByName('memory')?.recall('siding_calc_figures')??[];
+      if (this._parent.figures.length>0)
+         this.step=4; //Skip to the siding layout.
    }
    
    //public props
@@ -175,6 +182,7 @@ class StepsTool extends Tool
       {
          case 0:
          {
+            //Reset:
             if (this.parent.figures.length>0)
             {
                if (confirm('Начать сначала?\n(Все фигуры будут удалены)'))
@@ -191,6 +199,7 @@ class StepsTool extends Tool
          }
          case 1:
          {
+            //Select main figure:
             var tool=null;
             var figures=this.parent.figures;
             if (figures.length==0)
@@ -213,18 +222,24 @@ class StepsTool extends Tool
                this.parent.activeTool=tool;
             }
             
+            this._parent.getToolByName('memory')?.memorize('siding_calc_figures',this._parent.figures);
+            
             break;
          }
          case 2:
          {
+            //Define main figure size:
             this._toolPanel.classList.add('cut');
             this.parent.activeTool=this;
             this._figureType='';
+            
+            this._parent.getToolByName('memory')?.memorize('siding_calc_figures',this._parent.figures);
             
             break;
          }
          case 3:
          {
+            //Add hole:
             var selection=this.parent.selection;
             if ((this._figureType=='')&&(selection.length==0))
                this.step++;
@@ -247,6 +262,8 @@ class StepsTool extends Tool
                   tool._toolPanel.classList.add('cut');
                   this.parent.activeTool=tool;
                }
+               
+               this._parent.getToolByName('memory')?.memorize('siding_calc_figures',this._parent.figures);
             }
             break;
          }
@@ -255,10 +272,7 @@ class StepsTool extends Tool
             var tool=this.parent.getToolByName('calc');
             if (tool)
             {
-               tool.toolPanel.classList.remove('material');
-               tool.toolPanel.classList.remove('result');
-               tool.toolPanel.classList.remove('contacts');
-               tool.toolPanel.classList.add('layout');
+               tool.activeView='layout';
                this.parent.activeTool=tool;
                
                if (this._step<this._farestStep)
@@ -271,13 +285,11 @@ class StepsTool extends Tool
          }
          case 5:
          {
+            //Choose coverage params:
             var tool=this.parent.getToolByName('calc');
             if (tool)
             {
-               tool.toolPanel.classList.remove('layout');
-               tool.toolPanel.classList.remove('result');
-               tool.toolPanel.classList.remove('contacts');
-               tool.toolPanel.classList.add('material');
+               tool.activeView='material';
                this.parent.activeTool=tool;
                
                if (this._step<this._farestStep)
@@ -290,13 +302,11 @@ class StepsTool extends Tool
          }
          case 6:
          {
+            //Choose siding:
             var tool=this.parent.getToolByName('calc');
             if (tool)
             {
-               tool.toolPanel.classList.remove('layout');
-               tool.toolPanel.classList.remove('material');
-               tool.toolPanel.classList.remove('contacts');
-               tool.toolPanel.classList.add('result');
+               tool.activeView='result';
                this.parent.activeTool=tool;
                
                this.parent.fitToViewport(this.parent.figures);
@@ -306,13 +316,11 @@ class StepsTool extends Tool
          }
          case 7:
          {
+            //Display siding layout:
             var tool=this.parent.getToolByName('calc');
             if (tool)
             {
-               tool.toolPanel.classList.remove('layout');
-               tool.toolPanel.classList.remove('material');
-               tool.toolPanel.classList.remove('result');
-               tool.toolPanel.classList.add('contacts');
+               tool.activeView='contacts';
                this.parent.activeTool=tool;
                
                tool.calcFilling();
@@ -331,12 +339,11 @@ class StepsTool extends Tool
          this._cutsContainer.innerHTML='';
          for (var i=1;i<figures.length;i++)
          {
-            var sender=this;
             var struct={
                           tagName:'div',
                           childNodes:[
-                                        {tagName:'input',type:'button',className:figures[i].type,value:'',dataset:{indx:i},onclick:function(e_){sender.parent.select(sender.parent.figures[parseInt(this.dataset.indx)]);}},
-                                        {tagName:'input',type:'button',className:'tool clr',value:'✕',title:'Удалить',dataset:{indx:i},onclick:function(e_){sender.parent.removeFigures(sender.parent.figures[parseInt(this.dataset.indx)]); sender._repaintCutsList();}}
+                                        {tagName:'input',type:'button',className:figures[i].type,value:'',dataset:{indx:i},onclick:(e_)=>{this.parent.select(this.parent.figures[parseInt(e_.target.dataset.indx)]);}},
+                                        {tagName:'input',type:'button',className:'tool clr',value:'✕',title:'Удалить',dataset:{indx:i},onclick:(e_)=>{this.parent.removeFigures(this.parent.figures[parseInt(e_.target.dataset.indx)]); this._repaintCutsList();}}
                                      ]
                        };
             this._cutsContainer.appendChild(buildNodes(struct));
@@ -363,12 +370,11 @@ class HandPanTool extends Tool
       this._panStart=null;
       
       //Create tool panel
-      var sender=this;
       var struct={
                     tagName:'div',
                     className:'panel hand_pan',
                     childNodes:[
-                                  {tagName:'input',type:'button',className:'tool toggle',value:'',title:'Двигать холст',onclick:function(e_){sender.parent.activeTool=sender;}}
+                                  {tagName:'input',type:'button',className:'tool toggle',value:'',title:'Двигать холст',onclick:(e_)=>{this.parent.activeTool=this;}}
                                ]
                  };
       this._toolPanel=buildNodes(struct);
@@ -471,7 +477,6 @@ class RectTool extends FigureTool
       this.grabbedCorner='';
       
       //Create tool panel
-      var sender=this;
       var struct={
                     tagName:'div',
                     className:'panel rect',
@@ -504,18 +509,17 @@ class RectTool extends FigureTool
       this._inputs.w=this._toolPanel.querySelector('.panel.rect input[name=\'rect[w]\']');
       this._inputs.h=this._toolPanel.querySelector('.panel.rect input[name=\'rect[h]\']');
       
-      this._inputs.x.addEventListener('input',function(e_){if(!sender.figure) sender.newFigureFromInputs(); else sender.modifyFigure({x:this.value},this);});
-      this._inputs.y.addEventListener('input',function(e_){if(!sender.figure) sender.newFigureFromInputs(); else sender.modifyFigure({y:this.value},this);});
-      this._inputs.w.addEventListener('input',function(e_){if(!sender.figure) sender.newFigureFromInputs(); else sender.modifyFigure({w:this.value},this);});
-      this._inputs.h.addEventListener('input',function(e_){if(!sender.figure) sender.newFigureFromInputs(); else sender.modifyFigure({h:this.value},this);});
+      this._inputs.x.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({x:this.value},this);});
+      this._inputs.y.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({y:this.value},this);});
+      this._inputs.w.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({w:this.value},this);});
+      this._inputs.h.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({h:this.value},this);});
       
       this.btnPrev=this._toolPanel.querySelector('.panel.rect input[type=button].prev');
       this.btnAdd=this._toolPanel.querySelector('.panel.rect input[type=button].add_cut');
       this.btnNext=this._toolPanel.querySelector('.panel.rect input[type=button].next');
-      this.btnPrev.addEventListener('click',function(e_){var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; this.blur();}});
-      this.btnAdd.addEventListener('click',function(e_){if (sender.figure&&sender.testRect(sender.figure.rect)&&sender._isNew) sender.parent.addFigure(sender.figure);  sender.figure=null; var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; this.blur();}});
-      this.btnNext.addEventListener('click',function(e_){if (sender.figure&&sender.testRect(sender.figure.rect)&&sender._isNew) sender.parent.addFigure(sender.figure);  sender.figure=null; var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; this.blur();}});
-      
+      this.btnPrev.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
+      this.btnAdd.addEventListener('click',(e_)=>{if (this.figure&&this.testRect(this.figure.rect)&&this._isNew) this.parent.addFigure(this.figure);  this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
+      this.btnNext.addEventListener('click',(e_)=>{if (this.figure&&this.testRect(this.figure.rect)&&this._isNew) this.parent.addFigure(this.figure);  this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; e_.target.blur();}});
    }
    
    get name(){return 'rect';}
@@ -779,7 +783,6 @@ class TriangleTool extends FigureTool
       this.grabbedCorner='';
       
       //Create tool panel
-      var sender=this;
       var struct={
                     tagName:'div',
                     className:'panel triangle',
@@ -814,19 +817,18 @@ class TriangleTool extends FigureTool
       this._inputs.h=this._toolPanel.querySelector('.panel.triangle input[name=\'triangle[h]\']');
       this._inputs.c=this._toolPanel.querySelector('.panel.triangle input[name=\'triangle[c]\']');
       
-      this._inputs.x.addEventListener('input',function(e_){if(!sender.figure) sender.newFigureFromInputs(); else sender.modifyFigure({x:this.value},this);});
-      this._inputs.y.addEventListener('input',function(e_){if(!sender.figure) sender.newFigureFromInputs(); else sender.modifyFigure({y:this.value},this);});
-      this._inputs.w.addEventListener('input',function(e_){if(!sender.figure) sender.newFigureFromInputs(); else sender.modifyFigure({w:this.value},this);});
-      this._inputs.h.addEventListener('input',function(e_){if(!sender.figure) sender.newFigureFromInputs(); else sender.modifyFigure({h:this.value},this);});
-      this._inputs.c.addEventListener('input',function(e_){if(!sender.figure) sender.newFigureFromInputs(); else sender.modifyFigure({c:this.value},this);});
+      this._inputs.x.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({x:e_.target.value},e_.target);});
+      this._inputs.y.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({y:e_.target.value},e_.target);});
+      this._inputs.w.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({w:e_.target.value},e_.target);});
+      this._inputs.h.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({h:e_.target.value},e_.target);});
+      this._inputs.c.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({c:e_.target.value},e_.target);});
       
       this.btnPrev=this._toolPanel.querySelector('.panel.triangle input[type=button].prev');
       this.btnAdd=this._toolPanel.querySelector('.panel.triangle input[type=button].add_cut');
       this.btnNext=this._toolPanel.querySelector('.panel.triangle input[type=button].next');
-      this.btnPrev.addEventListener('click',function(e_){var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; this.blur();}});
-      this.btnAdd.addEventListener('click',function(e_){if (sender.figure&&sender.testTriangle(sender.figure)&&sender._isNew) sender.parent.addFigure(sender.figure);  sender.figure=null; var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; this.blur();}});
-      this.btnNext.addEventListener('click',function(e_){if (sender.figure&&sender.testTriangle(sender.figure)&&sender._isNew) sender.parent.addFigure(sender.figure);  sender.figure=null; var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; this.blur();}});
-      
+      this.btnPrev.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
+      this.btnAdd.addEventListener('click',(e_)=>{if (this.figure&&this.testTriangle(this.figure)&&this._isNew) this.parent.addFigure(this.figure);  this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
+      this.btnNext.addEventListener('click',(e_)=>{if (this.figure&&this.testTriangle(this.figure)&&this._isNew) this.parent.addFigure(this.figure);  this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; e_.target.blur();}});
    }
    
    get name(){return 'triangle';}
@@ -1008,7 +1010,6 @@ class TrapezoidTool extends FigureTool
       this.grabbedCorner='';
       
       //Create tool panel
-      var sender=this;
       var struct={
                     tagName:'div',
                     className:'panel trapezoid',
@@ -1045,19 +1046,19 @@ class TrapezoidTool extends FigureTool
       this._inputs.w2=this._toolPanel.querySelector('.panel.trapezoid input[name=\'trapezoid[w2]\']');
       this._inputs.c=this._toolPanel.querySelector('.panel.trapezoid input[name=\'trapezoid[c]\']');
       
-      this._inputs.x.addEventListener('input',function(e_){if(!sender.figure) sender.newFigureFromInputs(); else sender.modifyFigure({x:this.value},this);});
-      this._inputs.y.addEventListener('input',function(e_){if(!sender.figure) sender.newFigureFromInputs(); else sender.modifyFigure({y:this.value},this);});
-      this._inputs.w.addEventListener('input',function(e_){if(!sender.figure) sender.newFigureFromInputs(); else sender.modifyFigure({w:this.value},this);});
-      this._inputs.h.addEventListener('input',function(e_){if(!sender.figure) sender.newFigureFromInputs(); else sender.modifyFigure({h:this.value},this);});
-      this._inputs.w2.addEventListener('input',function(e_){if(!sender.figure) sender.newFigureFromInputs(); else sender.modifyFigure({w2:this.value},this);});
-      this._inputs.c.addEventListener('input',function(e_){if(!sender.figure) sender.newFigureFromInputs(); else sender.modifyFigure({c:this.value},this);});
+      this._inputs.x.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({x:e_.target.value},e_.target);});
+      this._inputs.y.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({y:e_.target.value},e_.target);});
+      this._inputs.w.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({w:e_.target.value},e_.target);});
+      this._inputs.h.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({h:e_.target.value},e_.target);});
+      this._inputs.w2.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({w2:e_.target.value},e_.target);});
+      this._inputs.c.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({c:e_.target.value},e_.target);});
       
       this.btnPrev=this._toolPanel.querySelector('.panel.trapezoid input[type=button].prev');
       this.btnAdd=this._toolPanel.querySelector('.panel.trapezoid input[type=button].add_cut');
       this.btnNext=this._toolPanel.querySelector('.panel.trapezoid input[type=button].next');
-      this.btnPrev.addEventListener('click',function(e_){var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; this.blur();}});
-      this.btnAdd.addEventListener('click',function(e_){if (sender.figure&&sender.testTrapezoid(sender.figure)&&sender._isNew) sender.parent.addFigure(sender.figure);  sender.figure=null; var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; this.blur();}});
-      this.btnNext.addEventListener('click',function(e_){if (sender.figure&&sender.testTrapezoid(sender.figure)&&sender._isNew) sender.parent.addFigure(sender.figure);  sender.figure=null; var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; this.blur();}});
+      this.btnPrev.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
+      this.btnAdd.addEventListener('click',(e_)=>{if (this.figure&&this.testTrapezoid(this.figure)&&this._isNew) this.parent.addFigure(this.figure);  this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
+      this.btnNext.addEventListener('click',(e_)=>{if (this.figure&&this.testTrapezoid(this.figure)&&this._isNew) this.parent.addFigure(this.figure);  this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; e_.target.blur();}});
       
    }
    
@@ -1244,7 +1245,6 @@ class PolyLineTool extends FigureTool
       this._grabbedPoint=-1;
       
       //Create tool panel
-      var sender=this;
       var struct={
                     tagName:'div',
                     className:'panel line',
@@ -1285,10 +1285,9 @@ class PolyLineTool extends FigureTool
       this.btnPrev=this._toolPanel.querySelector('.panel.line input[type=button].prev');
       this.btnAdd=this._toolPanel.querySelector('.panel.line input[type=button].add_cut');
       this.btnNext=this._toolPanel.querySelector('.panel.line input[type=button].next');
-      this.btnPrev.addEventListener('click',function(e_){var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; this.blur();}});
-      this.btnAdd.addEventListener('click',function(e_){if (sender.figure&&sender.testLine(sender.figure)&&sender._isNew) sender.applyNewFigure(); sender.figure=null; var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; this.blur();}});
-      this.btnNext.addEventListener('click',function(e_){if (sender.figure&&sender.testLine(sender.figure)&&sender._isNew) sender.applyNewFigure(); sender.figure=null; var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; this.blur();}});
-      
+      this.btnPrev.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
+      this.btnAdd.addEventListener('click',(e_)=>{if (this.figure&&this.testLine(this.figure)&&this._isNew) this.applyNewFigure(); this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
+      this.btnNext.addEventListener('click',(e_)=>{if (this.figure&&this.testLine(this.figure)&&this._isNew) this.applyNewFigure(); this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; e_.target.blur();}});
    }
    
    get name(){return 'polyline';}
@@ -1296,7 +1295,37 @@ class PolyLineTool extends FigureTool
    set figure(val_)
    {
       super.figure=val_;
+         memorize(key_,val_)
+   {
+      //Saves a value in local memory.
       
+      if (window.localStorage)
+         window.localStorage.setItem(key_,val_);
+      else
+         setCookie(key_,JSON.stringify(val_));
+   }
+   
+   recall(key_)
+   {
+      //Gets a value from local memory.
+      let val=null;
+      try
+      {
+         
+         if (window.localStorage)
+            val=window.localStorage.getItem(key_);
+         if (val===null)
+            val=JSON.parse(getCookie(key_));
+      }
+      catch (ex)
+      {
+         console.warn('CalcTool.recall(\''+key_+'\') caugth exception:',ex);
+      }
+      finally
+      {
+         return val;
+      }
+   }
       this.updateInputs();
    }
    get figure()
@@ -1327,15 +1356,14 @@ class PolyLineTool extends FigureTool
    
    initInputNode(node_)
    {
-      var sender=this;
       var inpX=node_.querySelector('input[name=\'point[x]\']');
       var inpY=node_.querySelector('input[name=\'point[y]\']');
       var btnA=node_.querySelector('input[type=button].add');
       var btnX=node_.querySelector('input[type=button].clr');
-      inpX.addEventListener('input',function(e_){sender.onCoordInput('x',this.closest('.point').dataset.indx,this.value);});
-      inpY.addEventListener('input',function(e_){sender.onCoordInput('y',this.closest('.point').dataset.indx,this.value);});
-      btnX.addEventListener('click',function(e_){sender.onBtnXClick(this.closest('.point').dataset.indx); this.blur();});
-      btnA.addEventListener('click',function(e_){sender.onBtnAddClick(this.closest('.point').dataset.indx); this.blur();});
+      inpX.addEventListener('input',(e_)=>{this.onCoordInput('x',e_.target.closest('.point').dataset.indx,e_.target.value);});
+      inpY.addEventListener('input',(e_)=>{this.onCoordInput('y',e_.target.closest('.point').dataset.indx,e_.target.value);});
+      btnX.addEventListener('click',(e_)=>{this.onBtnXClick(e_.target.closest('.point').dataset.indx); e_.target.blur();});
+      btnA.addEventListener('click',(e_)=>{this.onBtnAddClick(e_.target.closest('.point').dataset.indx); e_.target.blur();});
    }
    
    updateNthInput(n_,pt_)
@@ -1370,7 +1398,6 @@ class PolyLineTool extends FigureTool
                {
                   //console.log('add node');
                   var newNode=nodes[nodes.length-1].cloneNode(true);
-                  var sender=this;
                   this.initInputNode(newNode);
                   this._inputList.appendChild(newNode);
                }
@@ -1682,4 +1709,44 @@ class PolyLineTool extends FigureTool
       }
    }
    
+}
+
+//Memory (internal tool) =====================================================================================
+class MemoryTool extends Tool
+{
+   get name(){return 'memory';}
+   
+   memorize(key_,val_)
+   {
+      //Saves a value in local memory.
+      
+      console.log('Memorize',key_,val_);
+      if (window.localStorage)
+         window.localStorage.setItem(key_,JSON.stringify(val_));
+      else
+         setCookie(key_,JSON.stringify(val_));
+   }
+   
+   recall(key_)
+   {
+      //Gets a value from local memory.
+      let val=null;
+      try
+      {
+         if (window.localStorage)
+            val=window.localStorage.getItem(key_);
+         if (val===null)
+            val=getCookie(key_);
+         val=JSON.parse(val);
+      }
+      catch (ex)
+      {
+         console.warn('CalcTool.recall(\''+key_+'\') caugth exception:',ex);
+      }
+      finally
+      {
+         console.log('Recall',key_,val);
+         return val;
+      }
+   }
 }

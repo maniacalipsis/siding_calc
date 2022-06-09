@@ -305,7 +305,8 @@ else
                             TriangleTool,
                             TrapezoidTool,
                             PolyLineTool,
-                            CalcTool
+                            CalcTool,
+                            MemoryTool,
                          ];
          window.drawer=new Drawer({mainBox:document.querySelector('.drawer'),size:{w:1024,h:540},tools:drawerTools});
       }

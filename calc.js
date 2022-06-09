@@ -15,9 +15,9 @@ class CalcTool extends Tool
       this._cutAxis='x';
       this._cutHeight=1;
       this._stripeMaxLength=14;
-      this._colStep=1;
+      this._crossbarStep=1;   //TODO: obsolete?
       
-      this._columns=[];
+      this._crossbars=[];
       
       this._material='';
       this._price=0;
@@ -26,7 +26,6 @@ class CalcTool extends Tool
       this.precision=1000;
       
       //Create tool panel
-      var sender=this;
       var struct={
                     tagName:'div',
                     className:'panel calc',
@@ -53,7 +52,7 @@ class CalcTool extends Tool
                                                                     {tagName:'span',textContent:'Добавить через'},
                                                                     {tagName:'input',type:'number',name:'step',min:0.01,step:0.01,value:1},
                                                                     {tagName:'span',className:'unit',textContent:'м'},
-                                                                    {tagName:'input',className:'tool ok add',type:'button',value:'+',title:'Добавить',onclick:function(e_){sender.addColumn((sender._columns.length>0 ? sender._columns[sender._columns.length-1] : 0)+sender.colStep); sender.calcFilling(); this.blur();}}
+                                                                    {tagName:'input',className:'tool ok add',type:'button',value:'+',title:'Добавить',onclick:(e_)=>{this.addCrossbar((this._crossbars.length>0 ? this._crossbars[this._crossbars.length-1] : 0)+this.crossbarStep); this.calcFilling(); e_.target.blur();}}
                                                                  ]
                                                    }
                                                 ]
@@ -172,101 +171,131 @@ class CalcTool extends Tool
       this._toolPanel=buildNodes(struct);
       
       this.inputs.dir=this._toolPanel.querySelectorAll('.panel.calc input[name=\'direction\']');
-      this.inputs.colStep=this._toolPanel.querySelector('.panel.calc input[name=\'step\']');
+      this.inputs.crossbarStep=this._toolPanel.querySelector('.panel.calc input[name=\'step\']');
       //this.inputs.offset=this._toolPanel.querySelector('.panel.calc input[name=\'offset\']');
       //this.inputs.cutHeight=this._toolPanel.querySelector('.panel.calc input[name=\'cut_height\']');
       //this.inputs.maxLength=this._toolPanel.querySelector('.panel.calc input[name=\'max_len\']');
-      this.contactInputs=sender._toolPanel.querySelectorAll('input[name^=contacts]');
+      this.contactInputs=this._toolPanel.querySelectorAll('input[name^=contacts]');
       this.inputs.mat=this._toolPanel.querySelectorAll('.panel.calc input[name=\'material\']');
       this.btnPrev=this._toolPanel.querySelector('.panel.calc input[type=button].prev');
       this.btnNext=this._toolPanel.querySelector('.panel.calc input[type=button].next');
       this.btnSend=this._toolPanel.querySelector('.panel.calc input[type=button].send');
       
       for (var radio of this.inputs.dir)
-         radio.addEventListener('click',function(e_){sender.cutAxis=this.value; this.blur();});
-      this.inputs.colStep.addEventListener('input',function(e_){var val=parseCompleteFloat(this.value); if (!isNaN(val)&&val>0.01){sender.colStep=val; sender.calcFilling();}});
-      //this.inputs.offset.addEventListener('input',function(e_){var val=parseCompleteFloat(this.value); if (!isNaN(val)){sender.cutOffset=val; sender.calcFilling();}});
-      //this.inputs.cutHeight.addEventListener('input',function(e_){var val=parseCompleteFloat(this.value); if (!isNaN(val)&&val>0.01){sender.cutHeight=val; sender.calcFilling();}});
-      //this.inputs.maxLength.addEventListener('input',function(e_){var val=parseCompleteFloat(this.value); if (!isNaN(val)&&val>0.01){sender.stripeMaxLength=val; sender.calcFilling();}});
+         radio.addEventListener('click',(e_)=>{this.cutAxis=e_.target.value; e_.target.blur();});
+      this.inputs.crossbarStep.addEventListener('input',(e_)=>{var val=parseCompleteFloat(e_.target.value); if (!isNaN(val)&&val>0.01){this.crossbarStep=val; this.calcFilling();}});
+      //this.inputs.offset.addEventListener('input',(e_)=>{var val=parseCompleteFloat(e_.target.value); if (!isNaN(val)){this.cutOffset=val; this.calcFilling();}});
+      //this.inputs.cutHeight.addEventListener('input',(e_)=>{var val=parseCompleteFloat(e_.target.value); if (!isNaN(val)&&val>0.01){this.cutHeight=val; this.calcFilling();}});
+      //this.inputs.maxLength.addEventListener('input',(e_)=>{var val=parseCompleteFloat(e_.target.value); if (!isNaN(val)&&val>0.01){this.stripeMaxLength=val; this.calcFilling();}});
       
       for (var radio of this.inputs.mat)
-         radio.addEventListener('click',function(e_){sender.material=this.value; this.blur();});
+         radio.addEventListener('click',(e_)=>{this.material=e_.target.value; e_.target.blur();});
       
       for (var inp of this.contactInputs)
-         inp.addEventListener('input',function(e_){this.classList.toggle('invalid',this.value=='');});
+         inp.addEventListener('input',(e_)=>{e_.target.classList.toggle('invalid',e_.target.value=='');});
       
-      this.btnPrev.addEventListener('click',function(e_){var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; this.blur();}});
-      this.btnNext.addEventListener('click',function(e_){var stepsTool=sender.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; this.blur();}});
-      this.btnSend.addEventListener('click',function(e_){//Validate contacts
-                                                         var messBlk=sender._toolPanel.querySelector('.message');
-                                                         var errCnt=0;
-                                                         var contacts={name:'',phone:'',email:''};
-                                                         for (var inp of sender.contactInputs)
-                                                         {
-                                                            contacts[/\[([a-z]+)\]/i.exec(inp.name)[1]]=inp.value;
-                                                            var invalid=(inp.value=='');
-                                                            inp.classList.toggle('invalid',invalid);
-                                                            if (invalid)
-                                                               errCnt++;
-                                                         }
-                                                         //console.log(contacts);
-                                                         
-                                                         if (errCnt==0)
-                                                         {
-                                                            var figures=sender.parent.figures;
-                                                            for (var figure of figures)
-                                                               if (figure.type=='compound')
-                                                               {
-                                                                  figure.style.modes=[];
-                                                                  for (var points of figure.polyLines)
-                                                                     figure.style.modes.push(isNormalsOutside(points) ? 'add' : 'cut');
-                                                               }
-                                                            var data={figures:figures,material:{name:sender._material,price:sender._price,h:sender._cutHeight,max_len:sender._stripeMaxLength},res:sender.calculationData,opts:[],contacts:contacts}; 
-                                                            var optInpts=sender._toolPanel.querySelectorAll('input[name^=res_opts]');
-                                                            for (var inp of optInpts)
-                                                               if (inp.checked)
-                                                                  data.opts.push(inp.value);
-                                                            
-                                                            messBlk.classList.remove('error');
-                                                            messBlk.classList.remove('success');
-                                                            messBlk.classList.add('hidden');
-                                                            reqServerPost('',data,function(ans_){if (messBlk){var ok=ans_.status=='success'; messBlk.classList.remove('hidden'); messBlk.classList.toggle('error',!ok); messBlk.classList.toggle('success',ok); messBlk.innerHTML=(ok ? 'На указанный адрес отправлено письмо с результатами расчета.' : '<b>Ошибка:</b><br>'+ans_.errors.join('<br>'));}},function(ans_){var messBlk=sender._toolPanel.querySelector('.message'); if (messBlk){messBlk.classList.remove('hidden'); messBlk.classList.remove('success'); messBlk.classList.add('error'); messBlk.textContent='Не удалось отправить данные.';}});
-                                                         }
-                                                         else
-                                                         {
-                                                            messBlk.classList.remove('hidden');
-                                                            messBlk.classList.remove('success');
-                                                            messBlk.classList.add('error');
-                                                            messBlk.innerHTML='Пожалуйста, заполните все наобходимые поля.';
-                                                         }
-                                                        });
-      
+      this.btnPrev.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
+      this.btnNext.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; e_.target.blur();}});
+      this.btnSend.addEventListener('click',(e_)=>{
+                                                     var sender=this;
+                                                     //Validate contacts
+                                                     var messBlk=sender._toolPanel.querySelector('.message');
+                                                     var errCnt=0;
+                                                     var contacts={name:'',phone:'',email:''};
+                                                     for (var inp of sender.contactInputs)
+                                                     {
+                                                        contacts[/\[([a-z]+)\]/i.exec(inp.name)[1]]=inp.value;
+                                                        var invalid=(inp.value=='');
+                                                        inp.classList.toggle('invalid',invalid);
+                                                        if (invalid)
+                                                           errCnt++;
+                                                     }
+                                                     //Memorize contacts (forms completion doesn't works for them):
+                                                     let param={};
+                                                     for (var inp of sender.contactInputs)
+                                                         param[inp.name]=inp.value;
+                                                     this._parent.getToolByName('memory')?.memorize('siding_calc_user_contacts',param);
+                                                     
+                                                     
+                                                     if (errCnt==0)
+                                                     {
+                                                        var figures=sender.parent.figures;
+                                                        for (var figure of figures)
+                                                           if (figure.type=='compound')
+                                                           {
+                                                              figure.style.modes=[];
+                                                              for (var points of figure.polyLines)
+                                                                 figure.style.modes.push(isNormalsOutside(points) ? 'add' : 'cut');
+                                                           }
+                                                        var data={figures:figures,material:{name:sender._material,price:sender._price,h:sender._cutHeight,max_len:sender._stripeMaxLength},res:sender.calculationData,opts:[],contacts:contacts}; 
+                                                        var optInpts=sender._toolPanel.querySelectorAll('input[name^=res_opts]');
+                                                        for (var inp of optInpts)
+                                                           if (inp.checked)
+                                                              data.opts.push(inp.value);
+                                                        
+                                                        messBlk.classList.remove('error');
+                                                        messBlk.classList.remove('success');
+                                                        messBlk.classList.add('hidden');
+                                                        reqServerPost('',data,function(ans_){if (messBlk){var ok=ans_.status=='success'; messBlk.classList.remove('hidden'); messBlk.classList.toggle('error',!ok); messBlk.classList.toggle('success',ok); messBlk.innerHTML=(ok ? 'На указанный адрес отправлено письмо с результатами расчета.' : '<b>Ошибка:</b><br>'+ans_.errors.join('<br>'));}},function(ans_){var messBlk=sender._toolPanel.querySelector('.message'); if (messBlk){messBlk.classList.remove('hidden'); messBlk.classList.remove('success'); messBlk.classList.add('error'); messBlk.textContent='Не удалось отправить данные.';}});
+                                                     }
+                                                     else
+                                                     {
+                                                        messBlk.classList.remove('hidden');
+                                                        messBlk.classList.remove('success');
+                                                        messBlk.classList.add('error');
+                                                        messBlk.innerHTML='Пожалуйста, заполните все наобходимые поля.';
+                                                     }
+                                                  });
+   }
+   
+   onReady()
+   {
       //Load params
-      var val=getCookie('siding_calc_axis');
-      this.cutAxis=(val=='y' ? val : 'x');
-      var val=parseFloat(getCookie('siding_calc_offset'));
-      if (!isNaN(val))
-         this.cutOffset=val;
-      var val=parseFloat(getCookie('siding_calc_cut_height'));
-      if (!isNaN(val))
-         this.cutHeight=val;
-      var val=parseFloat(getCookie('siding_calc_max_len'));
-      if (!isNaN(val))
-         this.stripeMaxLength=val;
-      var val=parseFloat(getCookie('siding_calc_col_step'));
-      if (!isNaN(val))
-         this.colStep=val;
-      var colsData=getCookie('siding_calc_columns');
-      if (colsData)
-      {
-         var cols=JSON.parse(colsData);
-         console.log('cols',cols);
-         for (var col of cols)
-            this.addColumn(col);
-      }
+      let param;
+      
+      param=this._parent.getToolByName('memory')?.recall('siding_calc_axis');
+      this.cutAxis=(param=='y' ? param : 'x');
+      
+      param=parseFloat(this._parent.getToolByName('memory')?.recall('siding_calc_offset'));
+      if (!isNaN(param))
+         this.cutOffset=param;
+      
+      param=parseFloat(this._parent.getToolByName('memory')?.recall('siding_calc_cut_height'));
+      if (!isNaN(param))
+         this.cutHeight=param;
+      
+      param=parseFloat(this._parent.getToolByName('memory')?.recall('siding_calc_max_len'));
+      if (!isNaN(param))
+         this.stripeMaxLength=param;
+      
+      param=parseFloat(this._parent.getToolByName('memory')?.recall('siding_calc_col_step'));
+      if (!isNaN(param))
+         this.crossbarStep=param;
+      
+      param=this._parent.getToolByName('memory')?.recall('siding_calc_crossbars');
+      if (param)
+         for (var crossbar of param)
+            this.addCrossbar(crossbar);
+         
+      this.material=this._parent.getToolByName('memory')?.recall('siding_calc_material');
+      
+      param=this._parent.getToolByName('memory')?.recall('siding_calc_user_contacts')??{};
+      for (var inp of this.contactInputs)
+         inp.value=param[inp.name]??'';
    }
    
    get name(){return 'calc';}
+   
+   set activeView(nextView_)
+   {
+      let views=['material','result','contacts','layout'];
+      if (views.includes(nextView_))
+      {
+         for (let view of views)
+            this._toolPanel.classList.remove(view);
+         this._toolPanel.classList.add(nextView_);
+      }
+   }
    
    get cutAxis()
    {
@@ -283,7 +312,7 @@ class CalcTool extends Tool
       for (var item of items)
          item.textContent=this._cutAxis.toUpperCase()+':';
       
-      setCookie('siding_calc_axis',this._cutAxis);
+      this._parent.getToolByName('memory')?.memorize('siding_calc_axis',this._cutAxis);
    }
    
    get cutOffset()
@@ -296,7 +325,7 @@ class CalcTool extends Tool
       
       if (this.inputs.offset&&(parseFloat(this.inputs.offset.value)!=this._cutOffset))
          this.inputs.offset.value=this._cutOffset;
-      setCookie('siding_calc_offset',this._cutOffset);
+      this._parent.getToolByName('memory')?.memorize('siding_calc_offset',this._cutOffset);
    }
    
    get stripeMaxLength()
@@ -309,7 +338,7 @@ class CalcTool extends Tool
       
       if (this.inputs.maxLength&&(parseFloat(this.inputs.maxLength.value)!=this._stripeMaxLength))
          this.inputs.maxLength.value=this._stripeMaxLength;
-      //setCookie('siding_calc_max_len',this._stripeMaxLength);
+      //this._parent.getToolByName('memory')?.memorize('siding_calc_max_len',this._stripeMaxLength);
    }
    
    get cutHeight()
@@ -330,85 +359,97 @@ class CalcTool extends Tool
       if (this.inputs.cutHeight&&(parseFloat(this.inputs.cutHeight.value)!=this._cutHeight))
          this.inputs.cutHeight.value=this._cutHeight;
       
-      //setCookie('siding_calc_cut_height',this._cutHeight);
+      //this._parent.getToolByName('memory')?.memorize('siding_calc_cut_height',this._cutHeight);
    }
    
-   get colStep()
+   get crossbarStep()
    {
-      return this._colStep;
+      return this._crossbarStep;
    }
-   set colStep(val_)
+   set crossbarStep(val_)
    {
-      this._colStep=Math.max(val_,0.01);
+      this._crossbarStep=Math.max(val_,0.01);
       
-      if (parseFloat(this.inputs.colStep.value)!=this._colStep)
-         this.inputs.colStep.value=this._colStep;
-      setCookie('siding_calc_col_step',this._colStep);
+      if (parseFloat(this.inputs.crossbarStep.value)!=this._crossbarStep)
+         this.inputs.crossbarStep.value=this._crossbarStep;
+      
+      this._parent.getToolByName('memory')?.memorize('siding_calc_col_step',this._crossbarStep);
    }
    
    set material(val_)
    {
-      var mat=val_.split(',');
-      this._material=mat[0];
-      this._price=mat[1];
-      this.cutHeight=mat[2];
-      this.stripeMaxLength=mat[3];
+      if (val_)
+      {
+         let mat=val_.split(',');
+         this._material=mat[0];
+         this._price=mat[1];
+         this.cutHeight=mat[2];
+         this.stripeMaxLength=mat[3];
+         
+         this._parent.getToolByName('memory')?.memorize('siding_calc_material',val_);
+         
+         //Set inputs:
+         mat[1]='[0-9.]+'; //Replace price with wildcard.
+         let regexp=RegExp('^'+mat.join(',')+'$','i');
+         for (let radio of this.inputs.mat)
+            radio.checked=regexp.test(radio.value);
+      }
    }
    
    //private methods
-   changeColumn(indx_,coord_)
+   changeCrossbar(indx_,coord_)
    {
-      if (this._columns.length>indx_)
+      if (this._crossbars.length>indx_)
       {
-         this._columns[indx_]=coord_;
+         this._crossbars[indx_]=coord_;
          
-         setCookie('siding_calc_columns',JSON.stringify(this._columns));
+         this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
       }
    }
    
    //public methods
-   addColumn(coord_)
+   addCrossbar(coord_)
    {
-      if (!isNaN(coord_)&&arraySearch(coord_,this._columns)===false)
+      //Adds a crossbar position (point to split the siding).
+      if (!isNaN(coord_)&&arraySearch(coord_,this._crossbars)===false)
       {
          var listNode=this._toolPanel.querySelector('.columns .list');
-         this._columns.push(coord_);
-         setCookie('siding_calc_columns',JSON.stringify(this._columns));
+         this._crossbars.push(coord_);
+         this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
          
          if (listNode)
          {
             var item=buildNodes({tagName:'div',className:'point',childNodes:[{tagName:'label',childNodes:[{tagName:'span',className:'axis',textContent:this._cutAxis.toUpperCase()+':'},{tagName:'input',type:'number',name:'point',step:0.01,value:coord_},{tagName:'span',className:'unit',textContent:'м'},]},{tagName:'input',className:'tool clr',type:'button',value:'✕',title:'Удалить'}]});
             var input=item.querySelector('input[name=point]');
             var btn=item.querySelector('input[type=button]');
-            var indx=this._columns.length-1;
-            var sender=this;
-            input.addEventListener('input',function(e_){var val=parseFloat(this.value); if (!isNaN(val)){sender.changeColumn(indx,val); sender.calcFilling();}});
-            btn.addEventListener('click',function(e_){sender.removeColumn(parseFloat(input.value)); listNode.removeChild(item); sender.calcFilling(); this.blur();});
+            var indx=this._crossbars.length-1;
+            input.addEventListener('input',(e_)=>{var val=parseFloat(e_.target.value); if (!isNaN(val)){this.changeCrossbar(indx,val); this.calcFilling();}});
+            btn.addEventListener('click',(e_)=>{this.removeCrossbar(parseFloat(input.value)); listNode.removeChild(item); this.calcFilling(); e_.target.blur();});
             listNode.appendChild(item);
          }
       }
    }
    
-   removeColumn(coord_)
+   removeCrossbar(coord_)
    {
-      var indx=arraySearch(coord_,this._columns);
+      var indx=arraySearch(coord_,this._crossbars);
       if (indx!==false)
       {
-         this._columns.splice(indx,1);
-         setCookie('siding_calc_columns',JSON.stringify(this._columns));
+         this._crossbars.splice(indx,1);
+         this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
       }
    }
    
-   sortColumns()
+   sortCrossbars()
    {
-      this._columns.sort(function(a_,b_){return Math.sign(a_-b_);});
+      this._crossbars.sort(function(a_,b_){return Math.sign(a_-b_);});
       
       var items=this._toolPanel.querySelectorAll('.columns .list input[name=point]');
-      for (var i=0;i<this._columns.length;i++)
+      for (var i=0;i<this._crossbars.length;i++)
          if (items[i])
-            items[i].value=this._columns[i];
+            items[i].value=this._crossbars[i];
       
-      setCookie('siding_calc_columns',JSON.stringify(this._columns));
+      this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
    }
    
    onRepaintOverlay(overlay_)
@@ -478,7 +519,7 @@ class CalcTool extends Tool
             scanBox.rect.rt[norm]=roundVal(scanBox.rect.lb[norm]+this.cutHeight);  //rt and lb is on the one cutting line
             scanBox.rect.rt[tang]=bBox.rt[tang];
             
-            this.sortColumns();
+            this.sortCrossbars();
             
             while (scanBox.rect.lb[norm]<bBox.rt[norm])
             {
@@ -540,7 +581,7 @@ class CalcTool extends Tool
                   {
                      var lastStrp=stripes.pop();
                      
-                     for (var c of this._columns)
+                     for (var c of this._crossbars)
                      {
                         var crel=bBox.lb[tang]+c;
                         if ((lastStrp.rect.lb[tang]<crel)&&(crel<lastStrp.rect.rt[tang]))

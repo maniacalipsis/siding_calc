@@ -48,7 +48,7 @@ class Drawer
          
          if (this._paintBox)
          {
-            //Create canvases
+            //Create canvases:
             this._underlay=document.createElement('canvas');
             this._paintBox.appendChild(this._underlay);
             
@@ -58,7 +58,7 @@ class Drawer
             this._overlay=document.createElement('canvas');
             this._paintBox.appendChild(this._overlay);
             
-            //Setup statusbar
+            //Setup statusbar:
             var sbBox=this._mainBox.querySelector('.statusbar');
             if (sbBox)
             {
@@ -90,17 +90,16 @@ class Drawer
                this._statusBar.yBox=sbBox.querySelector('.cursor.y .value');
             }
             
-            //Assign listeners
-            var sender=this;//closure
-            window.addEventListener('resize'   ,function(e_){sender.onResize(e_);});
-            window.addEventListener('keypress' ,function(e_){sender.onKeyPress(e_);}); 
-            window.addEventListener('keydown'  ,function(e_){sender.onKeyDown(e_);});
-            window.addEventListener('keyup'    ,function(e_){sender.onKeyUp(e_);});
-            this._overlay.addEventListener('mousemove',function(e_){sender.onMouseMove(e_);});
-            this._overlay.addEventListener('click'    ,function(e_){sender.onClick(e_);});
-            this._overlay.addEventListener('mousedown',function(e_){sender.onMouseDown(e_);});
-            this._overlay.addEventListener('mouseup'  ,function(e_){sender.onMouseUp(e_);});
-            this._overlay.addEventListener('wheel'    ,function(e_){sender.onWheel(e_);});
+            //Assign listeners:
+            window.addEventListener('resize'   ,(e_)=>{this.onResize(e_);});
+            window.addEventListener('keypress' ,(e_)=>{this.onKeyPress(e_);}); 
+            window.addEventListener('keydown'  ,(e_)=>{this.onKeyDown(e_);});
+            window.addEventListener('keyup'    ,(e_)=>{this.onKeyUp(e_);});
+            this._overlay.addEventListener('mousemove',(e_)=>{this.onMouseMove(e_);});
+            this._overlay.addEventListener('click'    ,(e_)=>{this.onClick(e_);});
+            this._overlay.addEventListener('mousedown',(e_)=>{this.onMouseDown(e_);});
+            this._overlay.addEventListener('mouseup'  ,(e_)=>{this.onMouseUp(e_);});
+            this._overlay.addEventListener('wheel'    ,(e_)=>{this.onWheel(e_);});
             
             //Register tools
             if (params_.tools)
@@ -123,6 +122,9 @@ class Drawer
             this._origin.y=this._overlay.height-20;
             this.repaint();
             this.refreshStatusbar();
+            
+            for (let tool of this._tools)
+               tool.onReady?.();
          }
          else
             console.error('No paintBox');
@@ -212,6 +214,7 @@ class Drawer
    }
    
    get figures(){return this._figures;}
+   set figures(new_figures){this._figures=new_figures;}
    getFigures()
    {
       //Copy list of figures
@@ -333,7 +336,7 @@ class Drawer
    
    paintCross(canvas_,pos_,style_,isCanvasCoords_)
    {
-      //Paints crosshair
+      //Paints crosshair.
       
       var context=canvas_.getContext('2d');
       
@@ -348,7 +351,7 @@ class Drawer
       
       if (style_.radius>0)
       {
-         //Set crosshair with some radius
+         //Set crosshair with some radius:
          var radius=(isCanvasCoords_ ? style_.radius : this.lengthToCanvas(style_.radius));
          cross.vert.start.y-=radius;
          cross.vert.end.y+=radius;
@@ -357,14 +360,14 @@ class Drawer
       }
       else
       {
-         //Set croshair over whole canvas
+         //Set croshair over whole canvas:
          cross.vert.start.y=0;
          cross.vert.end.y=this._overlay.height;
          cross.hor.start.x=0;
          cross.hor.end.x=this._overlay.width;
       }
       
-      //Paint crosshair
+      //Paint crosshair:
       context.beginPath();
       context.strokeStyle=style_.color;
       context.moveTo(cross.vert.start.x,cross.vert.start.y);
@@ -377,7 +380,7 @@ class Drawer
    
    paintCrossesGrid(canvas_,rect_,step_,style_,isCanvasCoords_)
    {
-      //Paint grid from small crosses
+      //Paints grid from small crosses.
       
       var corners=(rect_.lb&&rect_.rt ? rect_ : rectCorners(rect_,isCanvasCoords_));
       var pos={};
@@ -402,14 +405,14 @@ class Drawer
    
    paintSolidGrid(canvas_,rect_,step_,style_,isCanvasCoords_)
    {
-      //Paints simple grid on given canvas_ starting from start_ point with step_ regularity
+      //Paints simple grid on given canvas_ starting from start_ point with step_ regularity.
       
       console.warn('function paintSolidGrid isn\'t ready now');
    }
    
    paintRect(canvas_,rect_,style_,isCanvasCoords_)
    {
-      //Paint grid from small crosses
+      //Paints grid from small crosses.
       var whRect=rectSize(rect_,isCanvasCoords_);
       if (whRect)
       {
