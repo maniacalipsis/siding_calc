@@ -134,7 +134,7 @@ function generate_report_text($opts_,$figures_,$material_,$panels_,$res_,$contac
 function email_to_admin()
 {
    $opts=decode_opts($_REQUEST["opts"]);
-   $contacts=array_map(htmlspecialchars,$_REQUEST["contacts"]);
+   $contacts=array_map("htmlspecialchars",$_REQUEST["contacts"]);
    $figures=htmlspecialchars(json_encode($_REQUEST["figures"],JSON_ENCODE_OPTIONS));
    $material=decode_material($_REQUEST["material"]);
    $calc_results=[
@@ -160,7 +160,7 @@ function email_to_admin()
 function email_to_user()
 {
    $opts=decode_opts($_REQUEST["opts"]);
-   $contacts=array_map(htmlspecialchars,$_REQUEST["contacts"]);
+   $contacts=array_map("htmlspecialchars",$_REQUEST["contacts"]);
    $figures=htmlspecialchars(json_encode($_REQUEST["figures"],JSON_ENCODE_OPTIONS));
    $material=decode_material($_REQUEST["material"]);
    $calc_results=[
@@ -254,12 +254,12 @@ function generate_pdf($opts_,$figures_,$scans_,$text_,$out_path_="")
 }
 
 // Main code ================================================================================ //
-if ($_SERVER["HTTP_X_REQUESTED_WITH"]=="JSONHttpRequest")
+if (($_SERVER["HTTP_X_REQUESTED_WITH"]??null)=="JSONHttpRequest")
 {
    $ans=["status"=>"fail"];
    $errors=[];
    
-   calc_store_results($_REQUEST["data"],$_REQUEST["res"]);
+   calc_store_results($_REQUEST["data"]??[],$_REQUEST["res"]??[]);
       
    if (!email_to_admin())
       $errors[]="Не удалось отправить запрос менеджеру.";
@@ -289,24 +289,24 @@ else
 <TITLE>SidingCalc</TITLE>
 <LINK REL="icon" HREF="<?=PAGE_ROOT?>/favicon.png" TYPE="image/png">
 <LINK REL="stylesheet" HREF="<?=PAGE_ROOT?>/main.css" TYPE="text/css">
-<SCRIPT SRC="<?=PAGE_ROOT?>/core/js_utils.js"></SCRIPT>
-<SCRIPT SRC="<?=PAGE_ROOT?>/graph_utils.js"></SCRIPT>
-<SCRIPT SRC="<?=PAGE_ROOT?>/tools.js"></SCRIPT>
-<SCRIPT SRC="<?=PAGE_ROOT?>/calc.js"></SCRIPT>
-<SCRIPT SRC="<?=PAGE_ROOT?>/drawer.js"></SCRIPT>
 </HEAD>
 <BODY>
-   <SCRIPT>
+   <SCRIPT TYPE="module">
+      import {initCheckboxes,initRadios} from '/core/js_utils.js';
+      import * as Tools from '/tools.js';
+      import {CalcTool} from '/calc.js';
+      import {Drawer} from '/drawer.js';
+      
       function initDrawer()
       {
          var drawerTools=[
-                            StepsTool,
-                            RectTool,
-                            TriangleTool,
-                            TrapezoidTool,
-                            PolyLineTool,
+                            Tools.StepsTool,
+                            Tools.RectTool,
+                            Tools.TriangleTool,
+                            Tools.TrapezoidTool,
+                            Tools.PolyLineTool,
+                            Tools.MemoryTool,
                             CalcTool,
-                            MemoryTool,
                          ];
          window.drawer=new Drawer({mainBox:document.querySelector('.drawer'),size:{w:1024,h:540},tools:drawerTools});
       }

@@ -1,4 +1,8 @@
-class CalcTool extends Tool
+import {buildNodes,clone,parseCompleteFloat,reqServer} from '/core/js_utils.js';
+import * as GU from '/graph_utils.js';
+import {Tool} from '/tools.js';
+
+export class CalcTool extends Tool
 {
    //Siding calc tool for Drawer
    
@@ -197,12 +201,11 @@ class CalcTool extends Tool
       this.btnPrev.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
       this.btnNext.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; e_.target.blur();}});
       this.btnSend.addEventListener('click',(e_)=>{
-                                                     var sender=this;
                                                      //Validate contacts
-                                                     var messBlk=sender._toolPanel.querySelector('.message');
+                                                     var messBlk=this._toolPanel.querySelector('.message');
                                                      var errCnt=0;
                                                      var contacts={name:'',phone:'',email:''};
-                                                     for (var inp of sender.contactInputs)
+                                                     for (var inp of this.contactInputs)
                                                      {
                                                         contacts[/\[([a-z]+)\]/i.exec(inp.name)[1]]=inp.value;
                                                         var invalid=(inp.value=='');
@@ -212,23 +215,23 @@ class CalcTool extends Tool
                                                      }
                                                      //Memorize contacts (forms completion doesn't works for them):
                                                      let param={};
-                                                     for (var inp of sender.contactInputs)
+                                                     for (var inp of this.contactInputs)
                                                          param[inp.name]=inp.value;
                                                      this._parent.getToolByName('memory')?.memorize('siding_calc_user_contacts',param);
                                                      
                                                      
                                                      if (errCnt==0)
                                                      {
-                                                        var figures=sender.parent.figures;
+                                                        var figures=this.parent.figures;
                                                         for (var figure of figures)
                                                            if (figure.type=='compound')
                                                            {
                                                               figure.style.modes=[];
                                                               for (var points of figure.polyLines)
-                                                                 figure.style.modes.push(isNormalsOutside(points) ? 'add' : 'cut');
+                                                                 figure.style.modes.push(GU.isNormalsOutside(points) ? 'add' : 'cut');
                                                            }
-                                                        var data={figures:figures,material:{name:sender._material,price:sender._price,h:sender._cutHeight,max_len:sender._stripeMaxLength},res:sender.calculationData,opts:[],contacts:contacts}; 
-                                                        var optInpts=sender._toolPanel.querySelectorAll('input[name^=res_opts]');
+                                                        var data={figures:figures,material:{name:this._material,price:this._price,h:this._cutHeight,max_len:this._stripeMaxLength},res:this.calculationData,opts:[],contacts:contacts}; 
+                                                        var optInpts=this._toolPanel.querySelectorAll('input[name^=res_opts]');
                                                         for (var inp of optInpts)
                                                            if (inp.checked)
                                                               data.opts.push(inp.value);
@@ -236,7 +239,9 @@ class CalcTool extends Tool
                                                         messBlk.classList.remove('error');
                                                         messBlk.classList.remove('success');
                                                         messBlk.classList.add('hidden');
-                                                        reqServerPost('',data,function(ans_){if (messBlk){var ok=ans_.status=='success'; messBlk.classList.remove('hidden'); messBlk.classList.toggle('error',!ok); messBlk.classList.toggle('success',ok); messBlk.innerHTML=(ok ? 'На указанный адрес отправлено письмо с результатами расчета.' : '<b>Ошибка:</b><br>'+ans_.errors.join('<br>'));}},function(ans_){var messBlk=sender._toolPanel.querySelector('.message'); if (messBlk){messBlk.classList.remove('hidden'); messBlk.classList.remove('success'); messBlk.classList.add('error'); messBlk.textContent='Не удалось отправить данные.';}});
+                                                        reqServer(null,data)
+                                                           .then((ans_)=>{if (messBlk){var ok=ans_.status=='success'; messBlk.classList.remove('hidden'); messBlk.classList.toggle('error',!ok); messBlk.classList.toggle('success',ok); messBlk.innerHTML=(ok ? 'На указанный адрес отправлено письмо с результатами расчета.' : '<b>Ошибка:</b><br>'+ans_.errors.join('<br>'));}})
+                                                           .catch((xhr_)=>{if (messBlk){messBlk.classList.remove('hidden'); messBlk.classList.remove('success'); messBlk.classList.add('error'); messBlk.textContent='Не удалось отправить данные.';}});
                                                      }
                                                      else
                                                      {
@@ -411,7 +416,7 @@ class CalcTool extends Tool
    addCrossbar(coord_)
    {
       //Adds a crossbar position (point to split the siding).
-      if (!isNaN(coord_)&&arraySearch(coord_,this._crossbars)===false)
+      if (!isNaN(coord_)&&(!this._crossbars.includes(coord_)))
       {
          var listNode=this._toolPanel.querySelector('.columns .list');
          this._crossbars.push(coord_);
@@ -432,8 +437,8 @@ class CalcTool extends Tool
    
    removeCrossbar(coord_)
    {
-      var indx=arraySearch(coord_,this._crossbars);
-      if (indx!==false)
+      var indx=this._crossbars.indexOf(coord_);
+      if (indx>-1)
       {
          this._crossbars.splice(indx,1);
          this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
@@ -472,12 +477,12 @@ class CalcTool extends Tool
                   var rect=this.parent.rectToCanvas(stripe.rect);
                   
                   //Write stripe length
-                  var pt=midPoint(rect.lb,rect.rt);
+                  var pt=GU.midPoint(rect.lb,rect.rt);
                   pt.y+=textSize/2;
                   context.font=textSize+'px sans-serif';
                   context.textAlign='center';
                   context.fillStyle=color;
-                  context.fillText(roundVal(stripe.l),pt.x,pt.y);
+                  context.fillText(GU.roundVal(stripe.l),pt.x,pt.y);
                }
       }
    }
@@ -514,9 +519,9 @@ class CalcTool extends Tool
             var norm=(tang=='x' ? 'y' : 'x');   //Normal, i.e. another axis that is normal to cutting.
             
             var scanBox={type:'rect',rect:{lb:{},rt:{}},style:{}};
-            scanBox.rect.lb[norm]=roundVal(bBox.lb[norm]+this.cutOffset);
+            scanBox.rect.lb[norm]=GU.roundVal(bBox.lb[norm]+this.cutOffset);
             scanBox.rect.lb[tang]=bBox.lb[tang];
-            scanBox.rect.rt[norm]=roundVal(scanBox.rect.lb[norm]+this.cutHeight);  //rt and lb is on the one cutting line
+            scanBox.rect.rt[norm]=GU.roundVal(scanBox.rect.lb[norm]+this.cutHeight);  //rt and lb is on the one cutting line
             scanBox.rect.rt[tang]=bBox.rt[tang];
             
             this.sortCrossbars();
@@ -557,7 +562,7 @@ class CalcTool extends Tool
                for (var piece of pieces)
                {
                   //Calc used square
-                  usedSquare+=polyLineSquare(piece.points);
+                  usedSquare+=GU.polyLineSquare(piece.points);
                   
                   //Merge bounding boxes
                   if ((stripes.length>0)&&(piece.bBox.lb[tang]<=stripes[stripes.length-1].rect.rt[tang]))  //NOTE: pieces must be sorted alonside cutting axis (tangent) in ascendent order
@@ -588,10 +593,10 @@ class CalcTool extends Tool
                         {
                            var part=clone(lastStrp);
                            part.rect.rt[tang]=crel;
-                           part.l=roundVal(part.rect.rt[tang]-part.rect.lb[tang]);
+                           part.l=GU.roundVal(part.rect.rt[tang]-part.rect.lb[tang]);
                            stripes.push(part);
                            lastStrp.rect.lb[tang]=crel;
-                           lastStrp.l=roundVal(lastStrp.rect.rt[tang]-lastStrp.rect.lb[tang]);
+                           lastStrp.l=GU.roundVal(lastStrp.rect.rt[tang]-lastStrp.rect.lb[tang]);
                         }
                      }
                      
@@ -605,8 +610,8 @@ class CalcTool extends Tool
                for (var stripe of stripes)
                {
                   var cnt=Math.floor(stripe.l/this.stripeMaxLength);
-                  var rest=roundVal(stripe.l-cnt*this.stripeMaxLength);
-                  var rt=clone(stripe.rect.rt);
+                  var rest=GU.roundVal(stripe.l-cnt*this.stripeMaxLength);
+                  var rt={...stripe.rect.rt};
                   if (cnt>0)
                   {
                      for (var s=0;s<cnt;s++)
@@ -635,8 +640,8 @@ class CalcTool extends Tool
                //Save stripes for visualisation 
                this.visuals.scans.push(stripes);
                
-               scanBox.rect.lb[norm]=roundVal(scanBox.rect.lb[norm]+this.cutHeight);   //Increment scanBox position
-               scanBox.rect.rt[norm]=roundVal(scanBox.rect.rt[norm]+this.cutHeight);   //
+               scanBox.rect.lb[norm]=GU.roundVal(scanBox.rect.lb[norm]+this.cutHeight);   //Increment scanBox position
+               scanBox.rect.rt[norm]=GU.roundVal(scanBox.rect.rt[norm]+this.cutHeight);   //
             }
             console.log('scans',this.visuals.scans);
             

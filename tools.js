@@ -1,5 +1,8 @@
+import {buildNodes,clone,getCookie,parseCompleteFloat} from '/core/js_utils.js';
+import * as GU from '/graph_utils.js';
+
 //Tool =================================================================================
-class Tool
+export class Tool
 {
    //Basic tool for Drawer
    constructor(parent_)
@@ -27,7 +30,7 @@ class Tool
 }
 
 //Steps =================================================================================
-class StepsTool extends Tool
+export class StepsTool extends Tool
 {
    //Basic tool for Drawer
    constructor(parent_)
@@ -262,9 +265,9 @@ class StepsTool extends Tool
                   tool._toolPanel.classList.add('cut');
                   this.parent.activeTool=tool;
                }
-               
-               this._parent.getToolByName('memory')?.memorize('siding_calc_figures',this._parent.figures);
             }
+            
+            this._parent.getToolByName('memory')?.memorize('siding_calc_figures',this._parent.figures);
             break;
          }
          case 4:
@@ -281,6 +284,8 @@ class StepsTool extends Tool
                   tool.calcFilling();
                }
             }
+            
+            this._parent.getToolByName('memory')?.memorize('siding_calc_figures',this._parent.figures);
             break;
          }
          case 5:
@@ -359,7 +364,7 @@ class StepsTool extends Tool
 }
 
 //Hand Pan =================================================================================
-class HandPanTool extends Tool
+export class HandPanTool extends Tool
 {
    //Hand tool for pannind viewport in Drawer
    constructor(parent_)
@@ -411,7 +416,7 @@ class HandPanTool extends Tool
 }
 
 //FigureTool =================================================================================
-class FigureTool extends Tool
+export class FigureTool extends Tool
 {
    //Basic figures drawing tool for Drawer
    constructor (parent_,type_)
@@ -465,7 +470,7 @@ class FigureTool extends Tool
 }
 
 //Rect Tool =================================================================================
-class RectTool extends FigureTool
+export class RectTool extends FigureTool
 {
    //Rect tool class
    constructor (parent_)
@@ -528,7 +533,7 @@ class RectTool extends FigureTool
    {
       super.figure=val_;
       
-      this.updateInputs(this.figure ? rectSize(this.figure.rect) : {x:0,y:0,w:0,h:0});
+      this.updateInputs(this.figure ? GU.rectSize(this.figure.rect) : {x:0,y:0,w:0,h:0});
       
    }
    get figure()
@@ -557,14 +562,14 @@ class RectTool extends FigureTool
       
       if (!errors)
       {
-         var rect=rectCorners(vect);
+         var rect=GU.rectCorners(vect);
          
          if (this.testRect(rect))
          {
-            this.figure={type:'rect',rect:rectNormalize(rect),style:clone(this.parent.style)};
+            this.figure={type:'rect',rect:GU.rectNormalize(rect),style:{...this.parent.style}};
             this._isNew=true;
          
-            this.updateInputs(rectSize(this._figure.rect));
+            this.updateInputs(GU.rectSize(this._figure.rect));
             
             //this.parent.repaintOverlay();
             this.parent.fitToViewport(this.parent.figures.length ? this.parent.figures : this.figure);
@@ -575,10 +580,10 @@ class RectTool extends FigureTool
    //public methods
    newFigureAtCursor(lb_)
    {
-      this.figure={type:'rect',rect:{lb:clone(lb_),rt:clone(lb_)},style:clone(this.parent.style)};
+      this.figure={type:'rect',rect:{lb:{...lb_},rt:{...lb_}},style:{...this.parent.style}};
       this._isNew=true;
       
-      this.updateInputs(rectSize(this._figure.rect));
+      this.updateInputs(GU.rectSize(this._figure.rect));
    }
    
    testRect(rect_)
@@ -587,7 +592,7 @@ class RectTool extends FigureTool
       
       if (rect_&&!isNaN(rect_.lb.x)&&!isNaN(rect_.lb.y)&&!isNaN(rect_.rt.x)&&!isNaN(rect_.rt.y))
       {
-         var size=rectSize(rect_);
+         var size=GU.rectSize(rect_);
          res=((size.w!=0)&&(size.h!=0));
       }
       
@@ -596,7 +601,7 @@ class RectTool extends FigureTool
    
    applyNewFigure()
    {
-      this.figure.rect=rectNormalize(this.figure.rect);
+      this.figure.rect=GU.rectNormalize(this.figure.rect);
       this.parent.addFigure(this.figure);
       this.figure=null;
    }
@@ -607,7 +612,7 @@ class RectTool extends FigureTool
       if (this.figure)
       {
          var rect=clone(this.figure.rect)
-         var vect=rectVect(rect);
+         var vect=GU.rectVect(rect);
          for (var key in params_)
             switch (key)
             {
@@ -654,11 +659,11 @@ class RectTool extends FigureTool
             }
          
          if (changed&1)
-            rect=rectCorners(vect); //Set new position and size
+            rect=GU.rectCorners(vect); //Set new position and size
          
          if ((changed&3)&&this.testRect(rect))
          {
-            this.figure.rect=rect;//rectNormalize(rect);
+            this.figure.rect=rect;//GU.rectNormalize(rect);
             this.updateInputs(vect,actor_);
          }
          else
@@ -691,15 +696,15 @@ class RectTool extends FigureTool
          {
             var rect=this.figure.rect;
             var cursor=this.parent.cursor;
-            if (ptCmp(rect.lb,cursor))
+            if (GU.ptCmp(rect.lb,cursor))
                this.grabbedCorner='lb';
-            else if (ptCmp(rect.rt,cursor))
+            else if (GU.ptCmp(rect.rt,cursor))
                this.grabbedCorner='rt';
-            else if (ptCmp({x:rect.lb.x,y:rect.rt.y},cursor))
+            else if (GU.ptCmp({x:rect.lb.x,y:rect.rt.y},cursor))
                this.grabbedCorner='lt';
-            else if (ptCmp({x:rect.rt.x,y:rect.lb.y},cursor))
+            else if (GU.ptCmp({x:rect.rt.x,y:rect.lb.y},cursor))
                this.grabbedCorner='rb';
-            else if (isPointInRect(cursor,rect)!==false)
+            else if (GU.isPointInRect(cursor,rect)!==false)
                this.grabbedCorner='all';
             else
             {
@@ -748,16 +753,16 @@ class RectTool extends FigureTool
       {
          if (this._isNew)
          {
-            this.parent.paintRect(overlay_,rectNormalize(clone(this.figure.rect)),this.figure.style);
+            this.parent.paintRect(overlay_,GU.rectNormalize(clone(this.figure.rect)),this.figure.style);
          }
          else
          {
             //Paint selection frame
             var rect=clone(this.figure.rect);
-            this.parent.paintRect(overlay_,rectNormalize(rect),{stroke:'rgba(55,184,88,1)'});
+            this.parent.paintRect(overlay_,GU.rectNormalize(rect),{stroke:'rgba(55,184,88,1)'});
             
             //Paint handlers
-            var points=(this.figure.type=='rect' ? outlineRect(this.figure.rect) : this.figure.points);
+            var points=(this.figure.type=='rect' ? GU.outlineRect(this.figure.rect) : this.figure.points);
             for (var pt of points)
             {
                pt=this.parent.pointToCanvas(pt);
@@ -771,7 +776,7 @@ class RectTool extends FigureTool
 }
 
 //Triangle Tool =================================================================================
-class TriangleTool extends FigureTool
+export class TriangleTool extends FigureTool
 {
    //Rect tool class
    constructor (parent_)
@@ -897,7 +902,7 @@ class TriangleTool extends FigureTool
       
       if (!errors)
       {
-         var style=clone(this.parent.style);
+         var style={...this.parent.style};
          style.closed=true;
          var figure={type:'polyline',points:this._pointsFromParams(params),style:style};
          //console.log(figure);
@@ -998,7 +1003,7 @@ class TriangleTool extends FigureTool
 }
 
 //Triangle Tool =================================================================================
-class TrapezoidTool extends FigureTool
+export class TrapezoidTool extends FigureTool
 {
    //Rect tool class
    constructor (parent_)
@@ -1130,7 +1135,7 @@ class TrapezoidTool extends FigureTool
       
       if (!errors)
       {
-         var style=clone(this.parent.style);
+         var style={...this.parent.style};
          style.closed=true;
          var figure={type:'polyline',points:this._pointsFromParams(params),style:style};
          //console.log(figure);
@@ -1233,7 +1238,7 @@ class TrapezoidTool extends FigureTool
 }
 
 //Polyline =====================================================================================
-class PolyLineTool extends FigureTool
+export class PolyLineTool extends FigureTool
 {
    //Polyline
    constructor(parent_)
@@ -1295,37 +1300,7 @@ class PolyLineTool extends FigureTool
    set figure(val_)
    {
       super.figure=val_;
-         memorize(key_,val_)
-   {
-      //Saves a value in local memory.
       
-      if (window.localStorage)
-         window.localStorage.setItem(key_,val_);
-      else
-         setCookie(key_,JSON.stringify(val_));
-   }
-   
-   recall(key_)
-   {
-      //Gets a value from local memory.
-      let val=null;
-      try
-      {
-         
-         if (window.localStorage)
-            val=window.localStorage.getItem(key_);
-         if (val===null)
-            val=JSON.parse(getCookie(key_));
-      }
-      catch (ex)
-      {
-         console.warn('CalcTool.recall(\''+key_+'\') caugth exception:',ex);
-      }
-      finally
-      {
-         return val;
-      }
-   }
       this.updateInputs();
    }
    get figure()
@@ -1336,18 +1311,18 @@ class PolyLineTool extends FigureTool
    //private methods
    testLine(figure_)
    {
-      return (figure_.points.length>2&&(selfXSections(figure_.points,figure_.style.closed).length==0));
+      return (figure_.points.length>2&&(GU.selfXSections(figure_.points,figure_.style.closed).length==0));
    }
    
    applyNewFigure()
    {
-      if (!isNormalsOutside(this.figure.points))
+      if (!GU.isNormalsOutside(this.figure.points))
          this.figure.points.reverse();
       
-      if (ptCmp(this.figure.points[0],this.figure.points[this.figure.points.length-1]))
+      if (GU.ptCmp(this.figure.points[0],this.figure.points[this.figure.points.length-1]))
          this.figure.points.pop();
       
-      var style=clone(this.parent.style);
+      var style={...this.parent.style};
       style.closed=true;
       
       this.parent.addFigure({type:'polyline',points:this.figure.points,style:style});
@@ -1449,12 +1424,12 @@ class PolyLineTool extends FigureTool
       
       if (this._figure&&((index_+1)<this._figure.points.length))
       {
-         pt=midPoint(this._figure.points[index_],this._figure.points[index_+1]);  //New point splits a polyline segment
+         pt=GU.midPoint(this._figure.points[index_],this._figure.points[index_+1]);  //New point splits a polyline segment
          console.log('subdiv',index_);
       }
       else if (this._figure&&this._figure.style.closed)
       {
-         pt=midPoint(this._figure.points[index_],this._figure.points[0]);       //New point splits segment between last and first points of a closed figure
+         pt=GU.midPoint(this._figure.points[index_],this._figure.points[0]);       //New point splits segment between last and first points of a closed figure
          console.log('subdiv last',index_);
       }
       else
@@ -1497,24 +1472,24 @@ class PolyLineTool extends FigureTool
    {
       if (!this.figure)
       {
-         this.figure={type:'polyline',points:[],style:clone(this.parent.style)};
+         this.figure={type:'polyline',points:[],style:{...this.parent.style}};
          this._isNew=true;
          
-         this.figure.points.push(roundPoint(clone(pt_))); //Add root point
+         this.figure.points.push(GU.roundPoint({...pt_})); //Add root point
       }
       
       if (indx_===undefined||this.figure.points.length<indx_)
       {
-         if (ptCmp(this.figure.points[0],pt_)&&this.testLine(this.figure))
+         if (GU.ptCmp(this.figure.points[0],pt_)&&this.testLine(this.figure))
             this.applyNewFigure();
          else
          {
-            this.figure.points.push(clone(pt_)); //Add new point
+            this.figure.points.push({...pt_}); //Add new point
             console.log('add pt');
          }
       }
       else
-         this.figure.points.splice(indx_,0,roundPoint(clone(pt_)));
+         this.figure.points.splice(indx_,0,GU.roundPoint({...pt_}));
       
       this.updateInputs();
    }
@@ -1530,7 +1505,7 @@ class PolyLineTool extends FigureTool
       if (!this._isNew&&this.figure)
       {
          for (var i=0;i<this.figure.points.length;i++)
-            if (ptCmp(this.figure.points[i],this.parent.cursor))
+            if (GU.ptCmp(this.figure.points[i],this.parent.cursor))
             {
                this._grabbedPoint=i;
                break;
@@ -1552,16 +1527,16 @@ class PolyLineTool extends FigureTool
             {
                //Apply path
                
-               var figure={type:'polyline',points:this.figure.points,style:clone(this.parent.style)};
+               var figure={type:'polyline',points:this.figure.points,style:{...this.parent.style}};
                var buff=null;
                
-               if (ptCmp(figure.points[0],figure.points[figure.points.length-1]))   //Remove closing point
+               if (GU.ptCmp(figure.points[0],figure.points[figure.points.length-1]))   //Remove closing point
                {
                   buff=figure.points.pop();
                   figure.style.closed=true;
                }
                
-               if (selfXSections(figure.points,figure.style.closed).length==0)
+               if (GU.selfXSections(figure.points,figure.style.closed).length==0)
                   this.applyNewFigure();
                else if (buff)
                   figure.points.push(buff);
@@ -1635,7 +1610,7 @@ class PolyLineTool extends FigureTool
          {
             var rad=this.parent.lengthToWorld(8);
             var rnbh={lb:{x:this.parent.cursor.x-rad,y:this.parent.cursor.y-rad},rt:{x:this.parent.cursor.x+rad,y:this.parent.cursor.y+rad}}; //Rectangular neighbourhood
-            var nearStart=isPointInNormalRect(this.figure.points[0],rnbh);
+            var nearStart=GU.isPointInNormalRect(this.figure.points[0],rnbh);
             if (nearStart)
                this.parent.setCursor(this.figure.points[0]);
                
@@ -1691,15 +1666,15 @@ class PolyLineTool extends FigureTool
             }
             
             //Highlight points of self-crosssection
-            var xPts=selfXSections(this.figure.points,false);
+            var xPts=GU.selfXSections(this.figure.points,false);
             for (var pt of xPts)
                this.parent.paintCross(overlay_,pt,{radius:this.parent.lengthToWorld(6),color:'#FF0000'});
             
             //Highlight closing
-            if (ptCmp(this.figure.points[0],this.figure.points[this.figure.points.length-1])&&ptCmp(this.figure.points[this.figure.points.length-1],this.parent.cursor))
+            if (GU.ptCmp(this.figure.points[0],this.figure.points[this.figure.points.length-1])&&GU.ptCmp(this.figure.points[this.figure.points.length-1],this.parent.cursor))
             {
                var radius=this.parent.lengthToWorld(6);
-               var rect=moveRect(this.parent.cursor,{x:-radius,y:-radius});
+               var rect=GU.moveRect(this.parent.cursor,{x:-radius,y:-radius});
                rect.w=radius*2;
                rect.h=rect.w;
                
@@ -1712,7 +1687,7 @@ class PolyLineTool extends FigureTool
 }
 
 //Memory (internal tool) =====================================================================================
-class MemoryTool extends Tool
+export class MemoryTool extends Tool
 {
    get name(){return 'memory';}
    

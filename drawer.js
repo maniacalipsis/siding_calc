@@ -1,4 +1,9 @@
-class Drawer
+import {cancelEvent,buildNodes,clone} from '/core/js_utils.js';
+import * as GU from '/graph_utils.js';
+import {HandPanTool} from '/tools.js';
+import {CalcTool} from '/calc.js';
+
+export class Drawer
 {
    constructor(params_)
    {
@@ -135,7 +140,7 @@ class Drawer
    
    get cursor()
    {
-      return clone(this._cursor);
+      return {...this._cursor};
    }
    set cursor(pos_)
    {
@@ -157,7 +162,7 @@ class Drawer
          this._cursor.x=pos_.x;
       if (!isNaN(pos_.y))
          this._cursor.y=pos_.y;
-      this._cursor=roundPoint(this._cursor);
+      this._cursor=GU.roundPoint(this._cursor);
       
       this.repaintOverlay();
       this.refreshStatusbar();
@@ -184,7 +189,7 @@ class Drawer
    {
       if (tool_)
       {
-         if ((tool_ instanceof HandPanTool)&&(this._activeTool instanceof CalcTool))
+         if ((tool_ instanceof HandPanTool)&&(this._activeTool instanceof CalcTool))   //TODO: Should be replaced with toolstack.
          {
             this._panTool=tool_;
             tool_.active=true;
@@ -316,7 +321,7 @@ class Drawer
             case 'h': {res[key]=-this.lengthToWorld(rect_[key]); break;}  //World Y-axes pointing upward, while screen Y-axis pointing downward
          }
       
-      return rectNormalize(res);
+      return GU.rectNormalize(res);
    }
    
    rectToCanvas(rect_)
@@ -331,7 +336,7 @@ class Drawer
             case 'h': {res[key]=-this.lengthToCanvas(rect_[key]); break;}  //World Y-axes pointing upward, while screen Y-axis pointing downward
          }
       
-      return rectNormalize(res,true);
+      return GU.rectNormalize(res,true);
    }
    
    paintCross(canvas_,pos_,style_,isCanvasCoords_)
@@ -382,7 +387,7 @@ class Drawer
    {
       //Paints grid from small crosses.
       
-      var corners=(rect_.lb&&rect_.rt ? rect_ : rectCorners(rect_,isCanvasCoords_));
+      var corners=(rect_.lb&&rect_.rt ? rect_ : GU.rectCorners(rect_,isCanvasCoords_));
       var pos={};
       
       var yStart=(isCanvasCoords_ ? corners.rt.y : corners.lb.y);
@@ -413,7 +418,7 @@ class Drawer
    paintRect(canvas_,rect_,style_,isCanvasCoords_)
    {
       //Paints grid from small crosses.
-      var whRect=rectSize(rect_,isCanvasCoords_);
+      var whRect=GU.rectSize(rect_,isCanvasCoords_);
       if (whRect)
       {
          whRect=(isCanvasCoords_ ? whRect : this.rectToCanvas(whRect));
@@ -477,7 +482,7 @@ class Drawer
             context.lineTo(pt.x,pt.y);
          }
          
-         style_.mode=(isNormalsOutside(points_) ? 'add' : 'cut');
+         style_.mode=(GU.isNormalsOutside(points_) ? 'add' : 'cut');
          
          if (style_.fill||style_.closed||style_.mode=='cut')
             context.closePath();
@@ -521,7 +526,7 @@ class Drawer
          {
             case 'polyline':
             {
-               var box=pointsBoundingBox(figure.points);
+               var box=GU.pointsBoundingBox(figure.points);
                if (box)
                   boxes.push({box:box,type:'polyline'});
                
@@ -531,7 +536,7 @@ class Drawer
             {
                for (var points of figure.polyLines)
                {
-                  var box=pointsBoundingBox(points);
+                  var box=GU.pointsBoundingBox(points);
                   if (box)
                      boxes.push({box:box,type:'polyline'});
                }
@@ -542,9 +547,9 @@ class Drawer
             default:
             {
                var rect=(figure.rect ? figure.rect : figure);
-               if (rectType(rect))
+               if (GU.rectType(rect))
                {
-                  box=rectCorners(rect);
+                  box=GU.rectCorners(rect);
                   boxes.push({box:box,type:'rect'});
                }
             }
@@ -569,7 +574,7 @@ class Drawer
          
          for (var box of boxes)
          {
-            var size=rectSize(box.box);
+            var size=GU.rectSize(box.box);
             box.box=this.rectToCanvas(box.box);
             //Paint W --------------------
             var x1=box.box.lb.x;
@@ -600,7 +605,7 @@ class Drawer
             
             
             //Text
-            context.fillText(roundVal(size.w)+'m',x1+Math.abs(x2-x1)/2,y2-textOffs);
+            context.fillText(GU.roundVal(size.w)+'m',x1+Math.abs(x2-x1)/2,y2-textOffs);
             
             //Paint H --------------------
             var x1=(box.type=='polyline' ? box.box.lb.x+Math.abs(box.box.rt.x-box.box.lb.x)/2 : box.box.lb.x);
@@ -634,7 +639,7 @@ class Drawer
             context.save();
             context.translate(x2,y2);
             context.rotate(-Math.PI/2);
-            context.fillText(roundVal(size.h)+'m',0,0);
+            context.fillText(GU.roundVal(size.h)+'m',0,0);
             context.rotate(Math.PI/2);
             context.translate(-x2,-y2);
             context.restore();
@@ -690,10 +695,10 @@ class Drawer
       //if (this.showNormals)
       //{
       //   for (var i=0;i<this.figure.points.length-1;i++)
-      //      if (!ptCmp(this.figure.points[i],this.figure.points[i+1]))
+      //      if (!GU.ptCmp(this.figure.points[i],this.figure.points[i+1]))
       //      {
-      //         var mid=midPoint(this.figure.points[i],this.figure.points[i+1]);
-      //         var normal=vectorNormal({lb:mid,rt:this.figure.points[i+1]},0.1);
+      //         var mid=GU.midPoint(this.figure.points[i],this.figure.points[i+1]);
+      //         var normal=GU.vectorNormal({lb:mid,rt:this.figure.points[i+1]},0.1);
       //         this.parent.paintVector(overlay_,normal,{stroke:'cyan'});
       //         this.parent.paintCross(overlay_,normal.lb,{radius:this.parent.lengthToWorld(3),color:'cyan'});
       //      }
@@ -767,44 +772,39 @@ class Drawer
    {
       //Snap real world point to nearest point amongst figure verticles.
       
-      function testPoint(rnbh_,point_)
-      {
-         return isPointInNormalRect(point_,rnbh_);
-      }
-      
       var res=false;
       
       var rad=this.lengthToWorld(8);
       var rnbh={lb:{x:pt_.x-rad,y:pt_.y-rad},rt:{x:pt_.x+rad,y:pt_.y+rad}}; //Rectangular neighbourhood
       var points;
-      var indx=false;
+      var indx=-1;
       
       var i=0;
-      while ((indx===false)&&(i<this._figures.length))
+      while ((indx<0)&&(i<this._figures.length))
       {
          switch (this._figures[i].type)
          {
             case 'rect':
             {
-               points=outlineRect(this._figures[i].rect);
-               indx=arraySearch(rnbh,points,testPoint);
+               points=GU.outlineRect(this._figures[i].rect);
+               indx=points.findIndex((point_)=>GU.isPointInNormalRect(point_,rnbh));
                
                break;
             }
             case 'polyline': 
             {
                points=this._figures[i].points;
-               indx=arraySearch(rnbh,points,testPoint);
+               indx=points.findIndex((point_)=>GU.isPointInNormalRect(point_,rnbh));
                
                break;
             }
             case 'compound':
             {
                var l=0;
-               while ((indx===false)&&(l<this._figures[i].polyLines.length))
+               while ((indx<0)&&(l<this._figures[i].polyLines.length))
                {
                   points=this._figures[i].polyLines[l];
-                  indx=arraySearch(rnbh,points,testPoint);
+                  indx=points.findIndex((point_)=>GU.isPointInNormalRect(point_,rnbh));
                   
                   l++;
                }
@@ -816,7 +816,7 @@ class Drawer
          i++;
       }
       
-      if (indx!==false)
+      if (indx>-1)
       {
          res=true;
          pt_.x=points[indx].x;
@@ -843,12 +843,12 @@ class Drawer
       remainder-=Math.round(remainder);
       res.y=(Math.abs(remainder)<0.5 ? res.y-remainder*snapSize : res.y+remainder*snapSize);
       
-      return roundPoint(res);
+      return GU.roundPoint(res);
    }
    
    pan(delta_,isCanvasCoords_)
    {
-      this._origin=moveRect(this._origin,(isCanvasCoords_ ? delta_ : {x:this.lengthToCanvas(delta_.x),y:this.lengthToCanvas(delta_.y)}));
+      this._origin=GU.moveRect(this._origin,(isCanvasCoords_ ? delta_ : {x:this.lengthToCanvas(delta_.x),y:this.lengthToCanvas(delta_.y)}));
       
       this.repaint();
       this.refreshStatusbar();
@@ -866,14 +866,14 @@ class Drawer
       if (bBox)
       {
          //Add some padding
-         var vect=rectVect(bBox);
+         var vect=GU.rectVect(bBox);
          vect.w=vect.w*1.1;
          vect.h=vect.h*1.1;
          vect.x-=vect.w*0.05;
          vect.y-=vect.h*0.05;
          
          var lb=this.pointToCanvas(vect);
-         this._origin=moveRect(this._origin,{x:-lb.x,y:this._canvas.height-lb.y});
+         this._origin=GU.moveRect(this._origin,{x:-lb.x,y:this._canvas.height-lb.y});
          this._zoomLevel*=Math.min(this.lengthToWorld(this._canvas.width)/vect.w,this.lengthToWorld(this._canvas.height/vect.h));
          this.repaint();
       }
@@ -894,8 +894,8 @@ class Drawer
       figures_=(figures_ instanceof Array ? figures_ : (figures_ ? [figures_] : []));
       for (var figure of figures_)
       {
-         var indx=arraySearch(figure,this._figures)
-         if (indx!==false)
+         var indx=this._figures.indexOf(figure);
+         if (indx>-1)
          {
             this.deselect(figure);
             this._figures.splice(indx,1);
@@ -924,8 +924,8 @@ class Drawer
       {
          for (var figure of figures_)
          {
-            var indx=arraySearch(figure,this._figures);
-            if (indx!==false&&((shift_<0&&(indx+shift_>=0))||(shift_>0)))
+            var indx=this._figures.indexOf(figure);
+            if ((indx>-1)&&((shift_<0&&(indx+shift_>=0))||(shift_>0)))
             {
                this._figures.splice(indx,1);
                this._figures.splice(indx+shift_,0,figure);
@@ -950,13 +950,13 @@ class Drawer
          {
             case 'polyline':
             {
-               var subBox=pointsBoundingBox(figure.points);
+               var subBox=GU.pointsBoundingBox(figure.points);
                if (subBox)
                {
                   if (!res)
                      res=clone(subBox);
                   else
-                     res=appendBoundingBox(res,subBox);
+                     res=GU.appendBoundingBox(res,subBox);
                   
                   if (assignLocal_)
                      figure.bBox=clone(subBox);
@@ -968,13 +968,13 @@ class Drawer
             {
                var cBox=null;
                for (var points of figure.polyLines)
-                  if (isNormalsOutside(points))
+                  if (GU.isNormalsOutside(points))
                   {
-                     var subBox=pointsBoundingBox(points);
+                     var subBox=GU.pointsBoundingBox(points);
                      if (!cBox)
                         cBox=clone(subBox);
                      else
-                        cBox=appendBoundingBox(cBox,subBox);
+                        cBox=GU.appendBoundingBox(cBox,subBox);
                   }
                
                if (cBox)
@@ -982,7 +982,7 @@ class Drawer
                   if (!res)
                      res=clone(cBox);
                   else
-                     res=appendBoundingBox(res,cBox);
+                     res=GU.appendBoundingBox(res,cBox);
                   
                   if (assignLocal_)
                      figure.bBox=clone(cBox);
@@ -994,14 +994,14 @@ class Drawer
             default:
             {
                var rect=(figure.rect ? figure.rect : figure);
-               if (rectType(rect))
+               if (GU.rectType(rect))
                {
-                  rect=rectCorners(rect);
+                  rect=GU.rectCorners(rect);
                   
                   if (!res)
                      res=clone(rect);
                   else
-                     res=appendBoundingBox(res,rect);
+                     res=GU.appendBoundingBox(res,rect);
                   
                   if (assignLocal_)
                      figure.bBox=clone(rect);
@@ -1022,13 +1022,13 @@ class Drawer
             {
                case 'rect':
                {
-                  figure.rect=moveRect(figure.rect,delta_);
+                  figure.rect=GU.moveRect(figure.rect,delta_);
                   break;
                }
                case 'polyline':
                {
                   for (var i=0;i<figure.points.length;i++)
-                     figure.points[i]=moveRect(figure.points[i],delta_);
+                     figure.points[i]=GU.moveRect(figure.points[i],delta_);
                   
                   break;
                }
@@ -1036,7 +1036,7 @@ class Drawer
                {
                   for (var points of figure.polyLines)
                      for (var i=0;i<points.length;i++)
-                        points[i]=moveRect(points[i],delta_);
+                        points[i]=GU.moveRect(points[i],delta_);
                }
             }
          
@@ -1055,14 +1055,14 @@ class Drawer
       {
          case 'polyline':
          {
-            res=isPointInPolyline(pt_,figure_.points);
+            res=GU.isPointInPolyline(pt_,figure_.points);
             break;
          }
          case 'compound':
          {
             for (var points of figure_.polyLines)
             {
-               res=isPointInPolyline(pt_,points);
+               res=GU.isPointInPolyline(pt_,points);
                if (res)
                   break;
             }
@@ -1072,7 +1072,7 @@ class Drawer
          default:
          {
             var rect=(figure_.rect ? figure_.rect : figure_);
-            res=isPointInRect(pt_,rect);
+            res=GU.isPointInRect(pt_,rect);
          }
       }
       
@@ -1089,7 +1089,7 @@ class Drawer
                if (polylines_[i]&&polylines_[k])
                {
                   //console.log(i,k);
-                  var buff=intersectPolyLines(polylines_[i],polylines_[k],'union');
+                  var buff=GU.intersectPolyLines(polylines_[i],polylines_[k],'union');
                   if (buff.length>0)
                      polylines_[i]=buff[0];
                   if (buff.length>1)
@@ -1120,14 +1120,14 @@ class Drawer
       for (var figure of aFigures_)
          switch (figure.type)
          {
-            case 'rect':      {aPs.push(outlineRect(figure.rect)); break;}
+            case 'rect':      {aPs.push(GU.outlineRect(figure.rect)); break;}
             case 'polyline' : {aPs.push(figure.points); break;}
             case 'compound' : {aPs=aPs.concat(figure.polyLines); break;}
          }
       for (var figure of bFigures_)
          switch (figure.type)
          {
-            case 'rect':      {bPs.push(outlineRect(figure.rect)); break;}
+            case 'rect':      {bPs.push(GU.outlineRect(figure.rect)); break;}
             case 'polyline' : {bPs.push(figure.points); break;}
             case 'compound' : {bPs=bPs.concat(figure.polyLines); break;}
          }
@@ -1135,7 +1135,7 @@ class Drawer
       //At first extract all cutting figures
       var cutLines=[];
       for (var i=0;i<aPs.length;i++)
-         if (!isNormalsOutside(aPs[i]))
+         if (!GU.isNormalsOutside(aPs[i]))
          {
             cutLines.push(aPs.splice(i,1)[0].reverse());
             i--;
@@ -1143,7 +1143,7 @@ class Drawer
       if (mode_=='cut'||mode_=='diff')
       {
          for (var i=0;i<bPs.length;i++)
-            if (!isNormalsOutside(bPs[i]))
+            if (!GU.isNormalsOutside(bPs[i]))
                cutLines.push(bPs[i].reverse());
             else
                cutLines.push(bPs[i]);
@@ -1152,7 +1152,7 @@ class Drawer
       }
       else
          for (var i=0;i<bPs.length;i++)
-            if (!isNormalsOutside(bPs[i]))
+            if (!GU.isNormalsOutside(bPs[i]))
             {
                cutLines.push(bPs.splice(i,1)[0].reverse()); //turn cutLines to positive
                i--;
@@ -1167,7 +1167,7 @@ class Drawer
          var buff=[];
          for (var aP of aPs)
             for (var bP of bPs)
-               buff=buff.concat(intersectPolyLines(aP,bP,mode_));
+               buff=buff.concat(GU.intersectPolyLines(aP,bP,mode_));
          
          aPs=this.unionPolylines(buff);
       }
@@ -1185,13 +1185,13 @@ class Drawer
             var passRes=[];
             for (var i=0;i<aPs.length;i++)
             {
-               var buff=intersectPolyLines(aPs[i],cut,'diff');
+               var buff=GU.intersectPolyLines(aPs[i],cut,'diff');
                //console.log(i,'buff',buff,' from',aPs[i],cut);
                if (buff.length==2&&(buff[0]==aPs[i])&&(buff[1]==cut))   //if the cut is inside aPs[i]
                {
                   passRes.push(buff[0]);
                   //console.log('rem');
-                  if (!arraySearch(cut,remained))
+                  if (!remained.includes(cut))
                      remained.push(cut);
                }
                else
@@ -1242,8 +1242,8 @@ class Drawer
       
       for (var figure of figures_)
       {
-         var indx=arraySearch(figure,this._selection);
-         if (indx!==false)
+         var indx=this._selection.indexOf(figure);
+         if (indx>-1)
             this._selection.splice(indx,1);
       }
       
@@ -1264,8 +1264,8 @@ class Drawer
       figures_ =(figures_ instanceof Array ? figures_ : [figures_ ]);
       for (var figure of figures_)
       {
-         var indx=arraySearch(figure,this._selection);   //Don't select figures already selected.
-         if (indx===false)                               //NOTE: Some functions like intersectFigures() are dependent on order of figures in selection, thus need to avoid of reordering if user will mistakenly select a figure multiple times.
+         var indx=this._selection.indexOf(figure);       //Don't select figures already selected.
+         if (indx<0)                                     //NOTE: Some functions like intersectFigures() are dependent on order of figures in selection, thus need to avoid of reordering if user will mistakenly select a figure multiple times.
             this._selection.push(figure);
       }
       
@@ -1399,7 +1399,7 @@ class Drawer
    
    onWheel(e_)
    {
-      var ort=mouseWheelOrt(e_);
+      var ort=Math.sign(e_.deltaY);
       this.zoom=this.zoom*(ort<0 ? this.zoomStep : 1/this.zoomStep);
       
       //Call tool listener

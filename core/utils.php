@@ -984,7 +984,7 @@ function send_email($recipients_,$subject_,$text_,$attachments_=null,$sender_=DE
       {
          $attachment=(is_array($attachment) ? $attachment : ["name"=>basename($attachment),"tmp_name"=>$attachment]);
          
-         if (!$attachment["error"]&&file_exists($attachment["tmp_name"])) //Retest file existence, but don't emit error if it wasn't found
+         if (!($attachment["error"]??false)&&file_exists($attachment["tmp_name"])) //Retest file existence, but don't emit error if it wasn't found
          {
             //Get and encode file contents:
             $file_content=base64_encode(file_get_contents($attachment["tmp_name"]));

@@ -1,29 +1,31 @@
+import {clone} from '/core/js_utils.js';
+
 var precision=12;
 var roundFactor=0.000000000001;
 
-function roundVal(val_)
+export function roundVal(val_)
 {
    return parseFloat(val_.toFixed(precision));
 }
 
-function roundPoint(pt_)
+export function roundPoint(pt_)
 {
    pt_.x=parseFloat(pt_.x.toFixed(precision));
    pt_.y=parseFloat(pt_.y.toFixed(precision));
    return pt_;
 }
 
-function valCmp(val1_,val2_)
+export function valCmp(val1_,val2_)
 {
    return (Math.abs(val1_-val2_)<roundFactor)
 }
 
-function ptCmp(p1_,p2_)
+export function ptCmp(p1_,p2_)
 {
    return (Math.abs(p1_.x-p2_.x)<roundFactor)&&(Math.abs(p1_.y-p2_.y)<roundFactor);
 }
 
-function rectType(rect_)
+export function rectType(rect_)
 {
    //Determines how to rect or vector defined:
    // 0 - isn't rect/vector, 1 - by one point and components, 2 - by two points.
@@ -38,7 +40,7 @@ function rectType(rect_)
    return res;
 }
 
-function rectNormalize(rect_,isCanvasCoords_)
+export function rectNormalize(rect_,isCanvasCoords_)
 {
    //Recalc rect position to make its width and height positive
 
@@ -84,7 +86,7 @@ function rectNormalize(rect_,isCanvasCoords_)
    return res;
 }
 
-function rectVect(rect_,isCanvasCoords_)
+export function rectVect(rect_,isCanvasCoords_)
 {
    //Converts rect corners to x,y,w,h
    
@@ -99,7 +101,7 @@ function rectVect(rect_,isCanvasCoords_)
    return res;
 }
 
-function rectSize(rect_,isCanvasCoords_)
+export function rectSize(rect_,isCanvasCoords_)
 {
    var res=rectVect(rect_,isCanvasCoords_);
    
@@ -112,7 +114,7 @@ function rectSize(rect_,isCanvasCoords_)
    return res;
 }
 
-function rectCorners(rect_,isCanvasCoords_)
+export function rectCorners(rect_,isCanvasCoords_)
 {
    //Calc coords of 4 rect corners
    
@@ -130,12 +132,12 @@ function rectCorners(rect_,isCanvasCoords_)
    return res;
 }
 
-function midPoint(pt1_,pt2_)
+export function midPoint(pt1_,pt2_)
 {
    return {x:(pt1_.x+pt2_.x)/2,y:(pt1_.y+pt2_.y)/2};
 }
 
-function vectorNormal(vect_,factor_)
+export function vectorNormal(vect_,factor_)
 {
    //Get normal to outside of a clockwise figure
    
@@ -153,14 +155,14 @@ function vectorNormal(vect_,factor_)
    return (type==1 ? vect_ : rectCorners(vect_));
 }
 
-function isNormalsOutside(polyline_)
+export function isNormalsOutside(polyline_)
 {
    var mid=midPoint(polyline_[0],polyline_[1]);
    var normal=vectorNormal({lb:mid,rt:polyline_[1]},0.01);
    return !isPointInPolyline(normal.rt,polyline_);
 }
 
-function moveRect(rect_,delta_)
+export function moveRect(rect_,delta_)
 {
    var res={};
    
@@ -176,7 +178,7 @@ function moveRect(rect_,delta_)
    return res;
 }
 
-function polyLineSquare(points_)
+export function polyLineSquare(points_)
 {
    //Find square of polyline figure using Shoelace formula
    
@@ -192,7 +194,7 @@ function polyLineSquare(points_)
    return Math.abs(sum)/2;
 }
 
-function crossProduct2d(a_,b_,isCanvasCoords_) //a.k.a vector product
+export function crossProduct2d(a_,b_,isCanvasCoords_) //a.k.a vector product
 {
    a_=rectVect(a_,isCanvasCoords_);
    b_=rectVect(b_,isCanvasCoords_);
@@ -202,7 +204,7 @@ function crossProduct2d(a_,b_,isCanvasCoords_) //a.k.a vector product
    //return Math.round((a_.w*b_.h-a_.h*b_.w)/treshold)*treshold;
 }
 
-function hitVect(shootingVect_,targetVect_,isCanvasCoords_)
+export function hitVect(shootingVect_,targetVect_,isCanvasCoords_)
 {
    //Thanks to @vladvic from habr.com for the theory of subject
    
@@ -227,15 +229,15 @@ function hitVect(shootingVect_,targetVect_,isCanvasCoords_)
    return res;
 }
 
-function xPoints(a_,b_,isCanvasCoords_)
+export function xPoints(a_,b_,isCanvasCoords_)
 {
    //Finds out point of crosssection of two vectors
    //Thanks to @vladvic from habr.com for the theory of subject: https://habr.com/post/267037/
    
    var res=[];
    
-   a_=clone(a_);
-   b_=clone(b_);
+   a_={...a_};
+   b_={...b_};
    
    //Firts, test vectors for mutual hiting
    var shootAB=hitVect(a_,b_,isCanvasCoords_);
@@ -294,7 +296,7 @@ function xPoints(a_,b_,isCanvasCoords_)
    return res;
 }
 
-function pointsToChainedVectors(points_,close_)
+export function pointsToChainedVectors(points_,close_)
 {
    //Makes array of vectors, where each one's end is a next one's start
    
@@ -308,7 +310,7 @@ function pointsToChainedVectors(points_,close_)
    return res;
 }
 
-function chainedVectorsToPoints(vectors_)
+export function chainedVectorsToPoints(vectors_)
 {
    var res=[];
    
@@ -318,7 +320,7 @@ function chainedVectorsToPoints(vectors_)
    return res;
 }
 
-function reverseChainedVectors(vectors_)
+export function reverseChainedVectors(vectors_)
 {
    var res=[];
    
@@ -329,7 +331,7 @@ function reverseChainedVectors(vectors_)
    
 }
 
-function selfXSections(points_,closed_,isCanvasCoords_)
+export function selfXSections(points_,closed_,isCanvasCoords_)
 {
    //Find points of self croxxsections in polyline
    var res=[];
@@ -350,20 +352,20 @@ function selfXSections(points_,closed_,isCanvasCoords_)
    return res;
 }
 
-function outlineRect(rect_,isCanvasCoords_)
+export function outlineRect(rect_,isCanvasCoords_)
 {
    var res=[];
    
    var corners=rectCorners(rect_,isCanvasCoords_);
-   res.push(clone(corners.lb));
+   res.push({...corners.lb});
    res.push({x:corners.lb.x,y:corners.rt.y});
-   res.push(clone(corners.rt));
+   res.push({...corners.rt});
    res.push({x:corners.rt.x,y:corners.lb.y});
    
    return res;
 }
 
-function cleanupPolyline(figure_)
+export function cleanupPolyline(figure_)
 {
    var res=figure_;
    
@@ -382,7 +384,7 @@ function cleanupPolyline(figure_)
    return res;
 }
 
-function appendBoundingBox(resBox_,box_,isCanvasCoords_)
+export function appendBoundingBox(resBox_,box_,isCanvasCoords_)
 {
    if (box_.lb.x<resBox_.lb.x)
       resBox_.lb.x=box_.lb.x;
@@ -397,7 +399,7 @@ function appendBoundingBox(resBox_,box_,isCanvasCoords_)
    return resBox_;
 }
 
-function pointsBoundingBox(points_,isCanvasCoords_)
+export function pointsBoundingBox(points_,isCanvasCoords_)
 {
    //Calc boundung box of single or multiple figures
    
@@ -405,7 +407,7 @@ function pointsBoundingBox(points_,isCanvasCoords_)
    
    if (points_.length)
    {
-      var figureBox={lb:clone(points_[0]),rt:clone(points_[0])};
+      var figureBox={lb:{...points_[0]},rt:{...points_[0]}};
       for (var i=1;i<points_.length;i++)
       {
          if (points_[i].x<figureBox.lb.x)
@@ -428,7 +430,7 @@ function pointsBoundingBox(points_,isCanvasCoords_)
    return res;
 }
 
-function sortPoints(points_,vect_)
+export function sortPoints(points_,vect_)
 {
    var axis=(!valCmp(vect_.lb.x,vect_.rt.x) ? 'x' : 'y');
    var order=(vect_.lb[axis]<vect_.rt[axis] ? 'Asc' : 'Desc');
@@ -444,7 +446,7 @@ function sortPoints(points_,vect_)
    return points_.sort(cb);
 }
 
-function isPointInRect(pt_,rect_)
+export function isPointInRect(pt_,rect_)
 {
    var res=false;
    
@@ -454,7 +456,7 @@ function isPointInRect(pt_,rect_)
    return res;
 }
 
-function isPointInNormalRect(pt_,rect_)
+export function isPointInNormalRect(pt_,rect_)
 {
    var res=false;
    
@@ -466,12 +468,12 @@ function isPointInNormalRect(pt_,rect_)
    return res;
 }
 
-function isPointInVect(pt_,vect_)
+export function isPointInVect(pt_,vect_)
 {
    return (crossProduct2d(vect_,{lb:vect_.lb,rt:pt_})==0)&&((isPointInRect(pt_,vect_)!==false));
 }
 
-function isPointInPolyline(pt_,points_)
+export function isPointInPolyline(pt_,points_)
 {
    //Test the point using method of ray intersections count
    
@@ -557,7 +559,7 @@ function isPointInPolyline(pt_,points_)
    return res;
 }
 
-function findIntersections(aSides_,bSides_)
+export function findIntersections(aSides_,bSides_)
 {
    //Find points of two polylines intersections and insert'em into proper position amongst these polylines points.
    
@@ -584,15 +586,15 @@ function findIntersections(aSides_,bSides_)
             //Add mid point to aSides_
             if (!ptCmp(pt,aSides_[i].lb)&&!ptCmp(pt,aSides_[i].rt))
             {
-               if (arraySearch(pt,aMidXPts[i],ptCmp)===false)
-                  aMidXPts[i].push(clone(pt)); 
+               if (!aMidXPts[i].find((midPt_)=>ptCmp(midPt_,pt)))
+                  aMidXPts[i].push({...pt}); 
             }
             
             //Add mid point to bSides_
             if (!ptCmp(pt,bSides_[k].lb)&&!ptCmp(pt,bSides_[k].rt))
             {
-               if (arraySearch(pt,bMidXPts[k],ptCmp)===false)
-                  bMidXPts[k].push(clone(pt));
+               if (!bMidXPts[k].find((midPt_)=>ptCmp(midPt_,pt)))
+                  bMidXPts[k].push({...pt});
             }
          }
       }
@@ -636,7 +638,7 @@ function findIntersections(aSides_,bSides_)
 }
 
 
-function filterSides(sides_,p_,cond_)
+export function filterSides(sides_,p_,cond_)
 {
    var res=[];
    
@@ -657,7 +659,7 @@ function filterSides(sides_,p_,cond_)
    return res;
 }
 
-function intersectPolyLines(aP_,bP_,mode_)
+export function intersectPolyLines(aP_,bP_,mode_)
 {
    var res=[];
    
