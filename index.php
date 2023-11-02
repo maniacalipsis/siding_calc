@@ -291,37 +291,39 @@ else
 <LINK REL="stylesheet" HREF="<?=PAGE_ROOT?>/main.css" TYPE="text/css">
 </HEAD>
 <BODY>
-   <SCRIPT TYPE="module">
-      import {initCheckboxes,initRadios} from '/core/js_utils.js';
-      import * as Tools from '/tools.js';
-      import {CalcTool} from '/calc.js';
-      import {Drawer} from '/drawer.js';
-      
-      function initDrawer()
-      {
-         var drawerTools=[
-                            Tools.StepsTool,
-                            Tools.RectTool,
-                            Tools.TriangleTool,
-                            Tools.TrapezoidTool,
-                            Tools.PolyLineTool,
-                            Tools.MemoryTool,
-                            CalcTool,
-                         ];
-         window.drawer=new Drawer({mainBox:document.querySelector('.drawer'),size:{w:1024,h:540},tools:drawerTools});
-      }
-      document.addEventListener('DOMContentLoaded',initDrawer);
-      document.addEventListener('DOMContentLoaded',initCheckboxes);
-      document.addEventListener('DOMContentLoaded',initRadios);
-   </SCRIPT>
-   <DIV CLASS="steps_bar flex"></DIV>
-   <DIV CLASS="drawer flex x-stretch">
-      <DIV CLASS="main_panel flex col x-stretch">
-         <DIV CLASS="paintbox"></DIV>
-         <DIV CLASS="statusbar flex"></DIV>
-      </DIV>
-      <DIV CLASS="scrollbox y">
-         <DIV CLASS="toolbox flex col x-stretch"></DIV>
+   <DIV CLASS="virtus_calc">
+      <SCRIPT TYPE="module">
+         import {initCheckboxes,initRadios} from '/core/js_utils.js';
+         import * as Tools from '/tools.js';
+         import {CalcTool} from '/calc.js';
+         import {Drawer} from '/drawer.js';
+         
+         function initDrawer()
+         {
+            var drawerTools=[
+                               Tools.StepsTool,
+                               Tools.RectTool,
+                               Tools.TriangleTool,
+                               Tools.TrapezoidTool,
+                               Tools.PolyLineTool,
+                               Tools.MemoryTool,
+                               CalcTool,
+                            ];
+            window.drawer=new Drawer({mainBox:document.querySelector('.drawer'),size:{w:1024,h:540},tools:drawerTools});
+         }
+         document.addEventListener('DOMContentLoaded',initDrawer);
+         document.addEventListener('DOMContentLoaded',initCheckboxes);
+         document.addEventListener('DOMContentLoaded',initRadios);
+      </SCRIPT>
+      <DIV CLASS="steps_bar flex"></DIV>
+      <DIV CLASS="drawer flex x-stretch">
+         <DIV CLASS="main_panel flex col x-stretch">
+            <DIV CLASS="paintbox"></DIV>
+            <DIV CLASS="statusbar flex"></DIV>
+         </DIV>
+         <DIV CLASS="scrollbox y">
+            <DIV CLASS="toolbox flex col x-stretch"></DIV>
+         </DIV>
       </DIV>
    </DIV>
 </BODY>

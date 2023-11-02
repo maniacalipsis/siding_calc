@@ -1,115 +1,58 @@
+/* ----- Standalone ----- */
 /* --- fonts --- */
 @font-face
 {
    font-family:'MuseoSans';
    font-weight:100;
-   src:url('/fonts/MuseoSansCyrl-100.otf');
+   src:url('/calculat5/fonts/MuseoSansCyrl-100.otf');
 }
 @font-face
 {
    font-family:'MuseoSans';
    font-weight:100;
    font-style:italic;
-   src:url('/fonts/MuseoSansCyrl-100Italic.otf');
+   src:url('/calculat5/fonts/MuseoSansCyrl-100Italic.otf');
 }
 @font-face
 {
    font-family:'MuseoSans';
    font-weight:300;
-   src:url('/fonts/MuseoSansCyrl-300.otf');
+   src:url('/calculat5/fonts/MuseoSansCyrl-300.otf');
 }
 @font-face
 {
    font-family:'MuseoSans';
    font-weight:300;
    font-style:italic;
-   src:url('/fonts/MuseoSansCyrl-300Italic.otf');
+   src:url('/calculat5/fonts/MuseoSansCyrl-300Italic.otf');
 }
 @font-face
 {
    font-family:'MuseoSans';
    font-weight:500;
-   src:url('/fonts/MuseoSansCyrl-700.otf');
+   src:url('/calculat5/fonts/MuseoSansCyrl-700.otf');
 }
 @font-face
 {
    font-family:'MuseoSans';
    font-weight:500;
    font-style:italic;
-   src:url('/fonts/MuseoSansCyrl-700Italic.otf');
+   src:url('/calculat5/fonts/MuseoSansCyrl-700Italic.otf');
 }
 @font-face
 {
    font-family:'MuseoSans';
    font-weight:600;
-   src:url('/fonts/MuseoSansCyrl-900.otf');
+   src:url('/calculat5/fonts/MuseoSansCyrl-900.otf');
 }
 @font-face
 {
    font-family:'MuseoSans';
    font-weight:600;
    font-style:italic;
-   src:url('/fonts/MuseoSansCyrl-900Italic.otf');
+   src:url('/calculat5/fonts/MuseoSansCyrl-900Italic.otf');
 }
 
-/* --- reset --- */
-*
-{
-  border:none;
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  background:none transparent;
-}
-table 
-{
-   border-collapse:collapse;
-}
-
-/* --- global --- */
-*
-{
-   font-family:'MuseoSans',sans-serif;
-   font-weight:300;
-   line-height:1.2;
-   color:#333333;
-}
-
-body
-{
-   display:flex;
-   flex-flow:column;
-   justify-content:flex-start;
-   align-items:stretch;
-   min-height:100vh;
-}
-
-.hidden
-{
-   display:none!important;
-}
-
-body,
-a,
-td,
-th,
-input,
-select,
-textarea
-{
-   font-size:16px;   /*browsers are unattendedly lightly reduces fontsize of inputs if it isn't specified exactly*/
-}
-
-a
-{
-   color:#7D8F2A; /*NOTE: overrideable in admin_custom.css*/
-   text-decoration-color:rgba(125,143,42,0.7); /*same color + opacity*/
-}
-
-b
-{
-   font-weight:500;
-}
 
 h1,
 h2,
@@ -155,6 +98,49 @@ table td
    padding:0.125em 0.5em;
 }
 
+/* ----- /Standalone ----- */
+
+/* --- reset --- */
+.virtus_calc *
+{
+  border:none;
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  background:none transparent;
+}
+
+.virtus_calc h1,
+.virtus_calc h2,
+.virtus_calc h3,
+.virtus_calc h4
+{
+	margin:0 0 20px;
+}
+@media (max-width:512px)
+{
+   .virtus_calc h1 {font-size:24px;}
+   .virtus_calc h2 {font-size:20px;}
+   .virtus_calc h3 {font-size:18px;}
+   .virtus_calc h4 {font-size:18px;}
+}
+
+.hidden
+{
+   display:none!important;
+}
+.p,
+div.message
+{
+   margin-bottom:1.2em;
+}
+
+.virtus_calc table th,
+.virtus_calc table td
+{
+   padding:0.125em 0.5em;
+}
+
 .message.error
 {
    color:#D44444;
@@ -165,9 +151,9 @@ table td
 }
 
 /* --- Inputs --- */
-select,
-textarea,
-input
+.virtus_calc select,
+.virtus_calc textarea,
+.virtus_calc input
 {
    vertical-align:baseline;
    margin:0.1em 0.25em;
@@ -189,30 +175,30 @@ input.invalid
    border-color:#D44444;
 }
 
-input[type='text'],
-textarea
+.virtus_calc input[type='text'],
+.virtus_calc textarea
 {
-   min-width:2em; /*to avoid zero-sized inputs*/
-   width:100%; /*limit maximum to available width*/
-   max-width:100%;  /*limit width, defined by wrapper param "len"*/
+   min-width:2em;    /*to avoid zero-sized inputs*/
+   width:100%;       /*limit maximum to available width*/
+   max-width:100%;   /*limit width, defined by wrapper param "len"*/
 }
-select
+.virtus_calc select
 {
    max-width:100%; /*limit maximum to available width*/
 }
 
-input[type='number'],
+.virtus_calc input[type='number'],
 {
    padding-right:0;
    width:4em; /*to avoid zero-sized inputs*/
 }
-input[type='number'],
+.virtus_calc input[type='number'],
 input[type='text'].number
 {
    width:5em;
 }
 
-input[type='file']
+.virtus_calc input[type='file']
 {
    padding-top:0;
    padding-left:0;
@@ -220,8 +206,8 @@ input[type='file']
 }
 
 .button,
-input[type='button'],
-input[type='submit']
+.virtus_calc input[type='button'],
+.virtus_calc input[type='submit']
 {
    margin:0.1em 0.25em;
    padding:0.8em 1.5em 0.7em 1.5em;
@@ -236,6 +222,14 @@ input[type='button'].alt,
 input[type='submit'].alt
 {
    background-image:url('images/btn-alt-bg.svg');
+}
+input[type='button'].link
+{
+   display:inline-block;
+   color:#175EB6;
+   text-decoration:underline dashed rgba(21,94,182,0.7); /*same color + opacity*/
+   border:none;
+   background:none transparent;
 }
 a.button
 {
@@ -412,7 +406,7 @@ input:not([type='button'])+.unit
 
 .drawer .main_panel
 {
-   flex:5 1 auto;
+   flex:5 1 29em;
    margin:1em;
    background:#FFFFFF;
    box-shadow:0 0 45px #C0D4EB;
@@ -429,7 +423,7 @@ input:not([type='button'])+.unit
    position:absolute;
    top:0;
    left:0;
-   cursor:none;
+   /*cursor:none;*/
 }
 
 .drawer .main_panel .statusbar
@@ -441,9 +435,11 @@ input:not([type='button'])+.unit
 {
    flex:0 0 29em;
    align-self:flex-start;
+   max-height:calc(100vh - 2em - 5em);
    margin:1em;
    background:#FFFFFF;
    box-shadow:0 0 45px #C0D4EB;
+   min-height: 570px;
 }
 
 .drawer .toolbox
@@ -463,6 +459,19 @@ input:not([type='button'])+.unit
 .drawer .toolbox .panel:not(.active)
 {
    display:none;
+}
+
+@media (max-width:480px)
+{
+   .drawer>.scrollbox.y
+   {
+      box-shadow:none;
+   }
+   
+   .drawer .toolbox .panel
+   {
+      padding:0;
+   }
 }
 
 .drawer .toolbox .panel h2
@@ -486,13 +495,33 @@ input:not([type='button'])+.unit
    margin-right:0.7em;
 }
 
+.drawer .hint_bar
+{
+   display:none;  /*disabled*/
+   margin-top:2em;
+}
+
+.drawer .hint_bar>div
+{
+   margin:0 2em 2em 2em;
+   padding:1.5em 0 0 0;
+   border-top:1px solid #175EB6;
+}
+.drawer .hint_bar>div:not(.sel)
+{
+   display:none;
+}
+
 /* -------------- steps bar ------------- */
 .steps_bar>div
 {
    margin:1em;
 }
-
-.steps_bar>div:not(.sel)>span
+.steps_bar>div:not(.enabled)>span
+{
+   color:#757575;
+}
+.steps_bar>div.enabled:not(.sel)>span
 {
    text-decoration:underline;
    cursor:pointer;
@@ -522,8 +551,17 @@ input:not([type='button'])+.unit
    display:none;
 }
 
+.drawer .toolbox .panel input[type='button'].add_cut
+{
+   margin-bottom:1em;
+   padding-left:3em;
+   color:#1A5EB3;
+   background:url('/images/add.svg') left center/contain no-repeat transparent;
+}
+
 /* Steps */
-.drawer .toolbox .panel.steps:not(.cut) .nav input[type='button'].prev
+.drawer .toolbox .panel.steps:not(.cut) .nav input[type='button'].prev,
+.drawer .toolbox .panel.steps:not(.cut) .nav input[type='button']
 {
    display:none;
 }
@@ -535,9 +573,14 @@ input:not([type='button'])+.unit
    align-self:stretch;
    margin:0 -0.5em 1em -0.5em;
 }
+@media (max-width:480px)
+{
+   .drawer .toolbox .panel.steps .figure_sel {margin:0;}
+}
 
 .drawer .toolbox .panel.steps .figure_sel label
 {
+   flex:0 1 8em;
    display:flex;
    flex-flow:column;
    align-items:center;
@@ -556,6 +599,11 @@ input:not([type='button'])+.unit
 .drawer .toolbox .panel.steps .figure_sel input[type='button'].trapezoid {background-image:url('/images/trapezoid-sel.svg');}
 .drawer .toolbox .panel.steps .figure_sel input[type='button'].triangle {background-image:url('/images/triangle-sel.svg');}
 .drawer .toolbox .panel.steps .figure_sel input[type='button'].polyline {background-image:url('/images/line-sel.svg');}
+
+.drawer .toolbox .panel.steps .figure_sel label
+{
+   text-align:center;
+}
 
 .drawer .toolbox .panel.steps .cuts .figure_sel>div
 {
@@ -601,9 +649,11 @@ input:not([type='button'])+.unit
 .drawer .toolbox .panel.calc:not(.layout) .layout,
 .drawer .toolbox .panel.calc:not(.material) .material,
 .drawer .toolbox .panel.calc:not(.result) .result,
+.drawer .toolbox .panel.calc:not(.final) .final,
 .drawer .toolbox .panel.calc:not(.contacts) .contacts,
 .drawer .toolbox .panel.calc:not(.contacts) .nav input.send,
-.drawer .toolbox .panel.calc.contacts .nav input.next
+.drawer .toolbox .panel.calc.contacts .nav input.next,
+.drawer .toolbox .panel.calc.final .nav:not(.final)
 {
    display:none;
 }
@@ -612,6 +662,8 @@ input:not([type='button'])+.unit
 .drawer .toolbox .panel.calc h2.material {background-image:url('/images/material.svg');}
 .drawer .toolbox .panel.calc h2.result {background-image:url('/images/recipe.svg');}
 .drawer .toolbox .panel.calc h2.contacts {background-image:url('/images/contacts.svg');}
+.drawer .toolbox .panel.calc .message.success h2 {background-image:url('/images/mess_ok.svg');}
+.drawer .toolbox .panel.calc .message.error h2 {background-image:url('/images/mess_err.svg');}
 
 .drawer .toolbox .panel.calc .lengths table td.l
 {
@@ -620,12 +672,17 @@ input:not([type='button'])+.unit
 
 .drawer .toolbox .panel.calc .lengths .scrollbox
 {
-   max-height:50vh;
+   max-height:40vh;
 }
 
 .drawer .toolbox .panel.calc .lengths .scrollbox table
 {
    margin-bottom:0;
+}
+
+.drawer .toolbox .panel.calc .result .group+h3
+{
+   margin-top:1em;
 }
 
 .drawer .toolbox .panel.calc .contacts span.req:after
@@ -637,6 +694,15 @@ input:not([type='button'])+.unit
 
 .drawer .toolbox .panel.calc .contacts input[name^='contacts']
 {
-   width:14em;
+   width:12em;
    margin-left:0.5em;
+}
+
+@media(max-width:991px)
+{
+   .steps_bar {margin:0 1em; flex-wrap:nowrap; overflow-x:scroll;}
+   .steps_bar>*{white-space:nowrap;}
+   .drawer {flex-flow:column;}
+   .drawer>.scrollbox.y {flex:0 1 auto; align-self:normal; min-height:0; max-height:none;}
+   .drawer .main_panel {order:1;}
 }

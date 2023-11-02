@@ -35,7 +35,7 @@ export class CalcTool extends Tool
                     className:'panel calc',
                     childNodes:[
                                   {tagName:'h2',className:'layout',textContent:'Шаг 5. Раскладка'},
-                                  {tagName:'h3',className:'layout',textContent:'Направление раскладки'},
+                                  {tagName:'div',className:'hint layout',innerHTML:'Выберите направление раскладки (ориентация панели в процессе монтажа)'},
                                   {
                                      tagName:'div',
                                      className:'opts layout',
@@ -56,71 +56,39 @@ export class CalcTool extends Tool
                                                                     {tagName:'span',textContent:'Добавить через'},
                                                                     {tagName:'input',type:'number',name:'step',min:0.01,step:0.01,value:1},
                                                                     {tagName:'span',className:'unit',textContent:'м'},
-                                                                    {tagName:'input',className:'tool ok add',type:'button',value:'+',title:'Добавить',onclick:(e_)=>{this.addCrossbar((this._crossbars.length>0 ? this._crossbars[this._crossbars.length-1] : 0)+this.crossbarStep); this.calcFilling(); e_.target.blur();}}
+                                                                    {tagName:'input',className:'tool ok add',type:'button',value:'+',title:'Добавить',onclick:function(e_){sender.addColumn((sender._columns.length>0 ? sender._columns[sender._columns.length-1] : 0)+sender.colStep); sender.calcFilling(); this.blur();}}
                                                                  ]
                                                    }
                                                 ]
                                   },
-                                  //{
-                                  //   tagName:'div',
-                                  //   className:'opts layout',
-                                  //   childNodes:[
-                                  //                 {
-                                  //                    tagName:'div',
-                                  //                    childNodes:[
-                                  //                                  {tagName:'label',childNodes:[{tagName:'span',textContent:'Смещение:'},{tagName:'input',type:'number',name:'offset',min:-this._cutHeight,max:this._cutHeight,step:0.01,value:0},{tagName:'span',className:'unit',textContent:' м'}]}
-                                  //                               ]
-                                  //                 },
-                                  //                 {
-                                  //                    tagName:'div',
-                                  //                    className:'group',
-                                  //                    childNodes:[
-                                  //                                  {tagName:'label',childNodes:[{tagName:'span',textContent:'Макс. длина:'},{tagName:'input',type:'number',name:'max_len',min:0.01,step:0.001,value:14},{tagName:'span',className:'unit',textContent:' м'}]}
-                                  //                               ]
-                                  //                 },
-                                  //                 
-                                  //                 
-                                  //              ]
-                                  //},
                                   {tagName:'h2',className:'material',textContent:'Шаг 6. Выбор материала'},
                                   {
-                                     tagName:'div',
+                                     tagName:'select',
+                                     name:'material',
                                      className:'opts material',
                                      childNodes:[
-                                                   {tagName:'h3',textContent:'Сэндвич панели МВ:'},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent: '80мм'},{tagName:'input',type:'radio',name:'material',value:'mv,100,0.080,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'100мм'},{tagName:'input',type:'radio',name:'material',value:'mv,100,0.100,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'120мм'},{tagName:'input',type:'radio',name:'material',value:'mv,100,0.120,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'200мм'},{tagName:'input',type:'radio',name:'material',value:'mv,100,0.200,14'}]},
-                                                   {tagName:'hr'},
-                                                   {tagName:'h3',textContent:'Сэндвич панели ПП:'},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent: '60мм'},{tagName:'input',type:'radio',name:'material',value:'pp,101,0.060,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent: '80мм'},{tagName:'input',type:'radio',name:'material',value:'pp,101,0.080,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'100мм'},{tagName:'input',type:'radio',name:'material',value:'pp,101,0.100,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'120мм'},{tagName:'input',type:'radio',name:'material',value:'pp,101,0.120,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'200мм'},{tagName:'input',type:'radio',name:'material',value:'pp,101,0.200,14'}]},
-                                                   {tagName:'hr'},
-                                                   {tagName:'h3',textContent:'Сэндвич панели ППу:'},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent: '60мм'},{tagName:'input',type:'radio',name:'material',value:'ppu,102,0.060,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'100мм'},{tagName:'input',type:'radio',name:'material',value:'ppu,102,0.100,14'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'120мм'},{tagName:'input',type:'radio',name:'material',value:'ppu,102,0.120,14'}]}
+                                                   {tagName:'option',textContent:'Сэндвич панели МВ',value:'mv,0.050,100,1.000,14'},
+                                     
+                                                   {tagName:'option',disabled:true,textContent:'---------------'},
+                                                   {tagName:'option',textContent:'Сэндвич панели ПП',value:'pp,0.050,101,1.000,14'},
+                                         
+                                                   {tagName:'option',disabled:true,textContent:'---------------'},
+                                                   {tagName:'option',textContent:'Сэндвич панели ППу',value:'ppu,0.050,102,1.000,14'},
+                                                
+												   {tagName:'option',disabled:true,textContent:'---------------'},
+                                                   {tagName:'option',textContent:'Профнастил C-2.5',value:'profc25,0.5,103,1.200,14'},
+                                                   {tagName:'option',textContent:'Профнастил C-10',value:'profc10,0.5,104,1.145,14'},
+												   {tagName:'option',textContent:'Профнастил НС-20',value:'profhc20,0.5,105,1.080,14'},
+												   {tagName:'option',textContent:'Профнастил НС-44',value:'profhc44,0.5,106,1.010,14'},
+												   {tagName:'option',textContent:'Профнастил Н-57',value:'profh57,0.5,107,0.950,14'}
+                                                   
                                                 ]
                                   },
-                                  {tagName:'h2',className:'result',textContent:'Шаг 7. Получить результат'},
+                                  {tagName:'h2',className:'result',textContent:'Шаг 7. Результат'},
                                   {
                                      tagName:'div',
                                      className:'result p',
                                      childNodes:[
-                                                   {
-                                                      tagName:'div',
-                                                      className:'options opts',
-                                                      childNodes:[
-                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Спецификация'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'spec',checked:true}]},
-                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Чертеж раскладки'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'drawing',checked:true}]},
-                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Оптимизация раскладки'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'optimize'}]},
-                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Расчет стоимости'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'price',checked:true}]}
-                                                                 ]
-                                                   },
                                                    {
                                                       tagName:'div',
                                                       className:'lengths group',
@@ -154,22 +122,40 @@ export class CalcTool extends Tool
                                                                     {tagName:'span',className:'value',id:'calc_res_waste',textContent:'0'},
                                                                     {tagName:'span',className:'unit',innerHTML:' м<sup>2</sup>'},
                                                                  ]
-                                                   }
+                                                   },
                                                 ]
                                   },
-                                  {tagName:'h2',className:'contacts',textContent:'Шаг 8. Контактные данные'},
-                                  {tagName:'p',className:'contacts',childNodes:[{tagName:'b',textContent:'Важно!'},' Чертёж, спецификацию и расчет стоимости мы отправим вам на указанный адрес. Пожалуйста, используйте актуальные данные.']},
+                                  {tagName:'h2',className:'contacts',textContent:'Шаг 8. Получить результат'},
                                   {
                                      tagName:'div',
-                                     className:'contacts opts',
+                                     className:'contacts p',
                                      childNodes:[
-                                                   {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'Ваше имя'},{tagName:'input',type:'text',name:'contacts[name]',value:''}]},
-                                                   {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'Телефон'},{tagName:'input',type:'text',name:'contacts[phone]',value:''}]},
-                                                   {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'E-mail'},{tagName:'input',type:'text',name:'contacts[email]',value:''}]}
+                                                   {
+                                                      tagName:'div',
+                                                      className:'options opts',
+                                                      childNodes:[
+                                                                    {tagName:'input',type:'hidden',name:'res_opts[]',value:'spec'},
+                                                                    {tagName:'input',type:'hidden',name:'res_opts[]',value:'drawing'},
+                                                                    {tagName:'input',type:'hidden',name:'res_opts[]',value:'optimize'},
+                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Расчет стоимости'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'price',className:'req_price'}]}
+                                                                 ]
+                                                   },
+                                                   {tagName:'h3',textContent:'Контактные данные'},
+                                                   {tagName:'p',childNodes:[{tagName:'b',textContent:'Важно!'},' Чертёж, спецификацию и расчет стоимости мы отправим вам на указанный адрес. Пожалуйста, используйте актуальные данные.']},
+                                                   {
+                                                      tagName:'div',
+                                                      className:'contact opts',
+                                                      childNodes:[
+                                                                    {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'Ваше имя'},{tagName:'input',type:'text',name:'contacts[name]',dataset:{required:1},value:''}]},
+                                                                    {tagName:'label',className:'phone',childNodes:[{tagName:'span',textContent:'Телефон'},{tagName:'input',type:'text',name:'contacts[phone]',dataset:{required:0},value:''}]},
+                                                                    {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'E-mail'},{tagName:'input',type:'text',name:'contacts[email]',dataset:{required:1},value:''}]}
+                                                                 ]
+                                                   },
+                                                   {tagName:'div',className:'message p hidden'},
                                                 ]
                                   },
-                                  {tagName:'p',className:'message hidden'},
                                   {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад'},{tagName:'input',type:'button',className:'next',value:'Далее'},{tagName:'input',type:'button',className:'send',value:'Получить'}]},
+                                  {tagName:'div',className:'nav final',childNodes:[{tagName:'input',type:'button',className:'final_prev',value:'Начать сначала'}]}
                                ]
                  };
       this._toolPanel=buildNodes(struct);
