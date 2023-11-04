@@ -1414,31 +1414,38 @@ export function buildNodes(struct_,collection_)
                case 'placeholder':
                case 'size':
                case 'src':
-               case 'style':
                case 'step':
                case 'type':
                case 'width':
-               case 'multiple':
-               case 'readonly':
-               case 'required':
-               case 'checked':
-               case 'disabled':
+               case 'checked':   // \
+               case 'disabled':  // |
+               case 'multiple':  // > boolean
+               case 'readonly':  // |
+               case 'required':  // /
                {
-                   res.setAttribute([prop],struct_[prop]);
-                   break;
+                  res.setAttribute([prop],struct_[prop]);
+                  break;
+               }
+               case 'style':
+               {
+                  if (struct_[prop] instanceof String)
+                     res.setAttribute([prop],struct_[prop]);
+                  else
+                     for (var st in struct_[prop])
+                        res[prop][st]=struct_[prop][st];
                }
                case 'dataset':
                {
                   for (var key in struct_[prop])
-                      res[prop][key]=struct_[prop][key];
+                     res[prop][key]=struct_[prop][key];
                   break;
                }
                case 'childNodes':
                {
                   let child;
                   for (let childStruct of struct_.childNodes)
-                      if (child=(childStruct instanceof Node ? childStruct : buildNodes(childStruct,collection_)))
-                         res.appendChild(child);
+                     if (child=(childStruct instanceof Node ? childStruct : buildNodes(childStruct,collection_)))
+                        res.appendChild(child);
                   break;
                }
                default: res[prop]=struct_[prop];
@@ -3105,7 +3112,6 @@ export function getElementRecursively(object_,keySequence_)
    return element;
 }
 
-
 export function clone(obj_)
 {
    //Clone make a deep clone of the object or array.
@@ -3255,7 +3261,7 @@ export function parseCompleteFloat(val_)
    //TODO: Removal candidate: this function has narrow use in specific tasks, so it will be better moved to a separate dedicated lib and reimplemented as decorator.
    console.warn('function parseCompleteFloat() is removal candidate.');
    
-   let res=NaN;
+   res=NaN;
    
    if (typeof val_ =='number')
       res=val_;

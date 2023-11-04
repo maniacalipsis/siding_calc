@@ -56,7 +56,7 @@ export class CalcTool extends Tool
                                                                     {tagName:'span',textContent:'Добавить через'},
                                                                     {tagName:'input',type:'number',name:'step',min:0.01,step:0.01,value:1},
                                                                     {tagName:'span',className:'unit',textContent:'м'},
-                                                                    {tagName:'input',className:'tool ok add',type:'button',value:'+',title:'Добавить',onclick:function(e_){sender.addColumn((sender._columns.length>0 ? sender._columns[sender._columns.length-1] : 0)+sender.colStep); sender.calcFilling(); this.blur();}}
+                                                                    {tagName:'input',className:'tool ok add',type:'button',value:'+',title:'Добавить',onclick:(e_)=>{this.addCrossbar((this._crossbars.length>0 ? this._crossbars[this._crossbars.length-1] : 0)+this.crossbarStep); this.calcFilling(); e_.target.blur();}}
                                                                  ]
                                                    }
                                                 ]

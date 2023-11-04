@@ -30,6 +30,13 @@ export class Tool
 }
 
 //Steps =================================================================================
+var hintStructs={
+                   figure:{tagName:'div',className:'hint figure',innerHTML:'Выберите фигуру поверхности, на которую нужно укладывать материал (фасад, кровля, стена)'},
+                   figureSize:{tagName:'div',className:'hint figure',innerHTML:'Введите размеры фигуры поверхности, на которую нужно укладывать материал (фасад, кровля, стена)'},
+                   cut:{tagName:'div',className:'hint cut',innerHTML:'Выберите фигуру выреза (оконного/дверного проема, арки)'},
+                   cutSize:{tagName:'div',className:'hint cut',innerHTML:'Введите размеры фигуры выреза (оконного/дверного проема, арки)'},
+                };
+
 export class StepsTool extends Tool
 {
    //Basic tool for Drawer
@@ -41,7 +48,7 @@ export class StepsTool extends Tool
       this._step=0;
       this._farestStep=0;
       this._maxSteps=7;
-      this._figureType='rect';
+      this._figureType='';
       
       this._figuresSwap=null;
       this._selectedCut=null;
@@ -49,14 +56,14 @@ export class StepsTool extends Tool
       //Init steps selector
       this._stepSelectors=[];
       var stpStructs=[
-                        {tagName:'div',className:'sel',childNodes:[{tagName:'span',textContent:'1. Фигура'}],dataset:{step:0}},
+                        {tagName:'div',className:'sel enabled',childNodes:[{tagName:'span',textContent:'1. Фигура'}],dataset:{step:0}},
                         {tagName:'div',childNodes:[{tagName:'span',textContent:'2. Размер'}],dataset:{step:1}},
                         {tagName:'div',childNodes:[{tagName:'span',textContent:'3. Вырез'}],dataset:{step:2}},
                         {tagName:'div',childNodes:[{tagName:'span',textContent:'4. Размер выреза'}],dataset:{step:3}},
                         {tagName:'div',childNodes:[{tagName:'span',textContent:'5. Раскладка'}],dataset:{step:4}},
                         {tagName:'div',childNodes:[{tagName:'span',textContent:'6. Выбор материала'}],dataset:{step:5}},
                         {tagName:'div',childNodes:[{tagName:'span',textContent:'7. Результат'}],dataset:{step:6}},
-                        {tagName:'div',childNodes:[{tagName:'span',textContent:'8. Контакты'}],dataset:{step:7}}
+                        {tagName:'div',childNodes:[{tagName:'span',textContent:'8. Получить'}],dataset:{step:7}},
                      ];
       for (var stpStruct of stpStructs)
          this._stepSelectors.push(buildNodes(stpStruct));
@@ -76,7 +83,8 @@ export class StepsTool extends Tool
                     childNodes:[
                                   {tagName:'h2',className:'figure',textContent:'Шаг 1. Фигура'},
                                   {tagName:'h2',className:'cut',textContent:'Шаг 3. Вырез'},
-                                  {tagName:'h3',textContent:'Выберите фигуру'},
+                                  hintStructs.figure,
+                                  hintStructs.cut,
                                   {
                                      tagName:'div',
                                      className:'figure_sel flex around',
@@ -139,7 +147,7 @@ export class StepsTool extends Tool
       if ((0<=val_)&&(val_<=this._maxSteps))
          this._step=val_;
       
-      if (this._step>this._farestStep)
+      if (this._step>this._farestStep) //Disallow random acess to the steps that wasn't reached sequentially.
          this._farestStep=this._step;
       
       //Force step to very start if there is no figures was drawed
@@ -151,7 +159,10 @@ export class StepsTool extends Tool
       
       //Update direct step selectors
       for (var i=0;i<this._stepSelectors.length;i++)
+      {
          this._stepSelectors[i].classList.toggle('sel',i==this._step);
+         this._stepSelectors[i].classList.toggle('enabled',i<=this._farestStep);
+      }
       
       //Toggle between resulting compound figure and separate source figures
       if (this._step<4)
