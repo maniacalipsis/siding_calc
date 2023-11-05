@@ -1,5 +1,5 @@
 <?php
-require_once("./config.php");  //Include environment-specific settings.
+require_once("config.php");  //Include environment-specific settings.
 
 define("ROOT_DIR",$_SERVER["DOCUMENT_ROOT"].PAGE_ROOT);
 define("JSON_ENCODE_OPTIONS",JSON_HEX_APOS|JSON_HEX_QUOT|JSON_PARTIAL_OUTPUT_ON_ERROR);
