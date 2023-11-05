@@ -1,5 +1,5 @@
-import {decorateInputFieldVal,bindEvtInputToDeferredChange,buildNodes,clone,getCookie,DynamicForm,DynamicFormItem} from '/core/js_utils.js';
-import * as GU from '/graph_utils.js';
+import {decorateInputFieldVal,bindEvtInputToDeferredChange,buildNodes,clone,getCookie,DynamicForm,DynamicFormItem} from './core/js_utils.js';
+import * as GU from './graph_utils.js';
 
 if (!('structuredClone' in (globalThis??window)))
    (globalThis??window).structuredClone=clone;
