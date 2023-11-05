@@ -27,6 +27,7 @@ export class CalcTool extends Tool
       this._crossbars=[];
       
       this._material='';
+      this._matThickness=0;
       this._price=0;
       
       //public props

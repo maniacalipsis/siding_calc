@@ -21,9 +21,9 @@ function rnd_bytes($len_)
    {
       $chrs="0123456789abcdef";
       for ($i=0;$i<$len_;$i++)
-         $rec.=$chrs[(int)rand(0,15)];
+         $res.=$chrs[(int)rand(0,15)];
    }
-   return $res_;
+   return $res;
 }
 
 function calc_store_results($data_,$res_)
@@ -47,7 +47,7 @@ function decode_material($material_)
    $res=[
            "name"=>$aliases[$material_["name"]]??"",
            "price"=>(float)($material_["price"]??0),
-           "thikness"=>(float)$material_["n"],
+           "thikness"=>(float)($material_["n"]??0),
            "max_len"=>(float)($material_["max_len"]??0),
         ];
    return $res;
@@ -140,12 +140,12 @@ function generate_report_text($opts_,$size_,$material_,$panels_,$res_,$contacts_
 
 function email_to_admin()
 {
-   $opts=decode_opts($_REQUEST["opts"]);
-   $contacts=array_map("htmlspecialchars",$_REQUEST["contacts"]);
+   $opts=decode_opts($_REQUEST["opts"]??[]);
+   $contacts=array_map("htmlspecialchars",$_REQUEST["contacts"]??[]);
    $figures_dump="";//htmlspecialchars(json_encode($_REQUEST["figures"],JSON_ENCODE_OPTIONS));
-   $b_box=bounding_box($_REQUEST["figures"],false);
+   $b_box=bounding_box($_REQUEST["figures"]??[],false);
    $size=["w"=>$b_box["rt"]["x"]-$b_box["lb"]["x"],"h"=>$b_box["rt"]["y"]-$b_box["lb"]["y"]];
-   $material=decode_material($_REQUEST["material"]);
+   $material=decode_material($_REQUEST["material"]??[]);
    $calc_results=[
                     "count"=>(int)$_REQUEST["res"]["count"],
                     "total_l"=>(float)$_REQUEST["res"]["total_l"],
