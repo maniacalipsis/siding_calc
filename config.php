@@ -1,7 +1,7 @@
 <?php
 //NOTE: Place all settings specific to environment here.
 
-error_reporting(0);
+//error_reporting(0);
 define("PAGE_ROOT","/calculat5");
 
 define("SERVER_HOST","ntkzavod.com.ua");
