@@ -1052,7 +1052,7 @@ export function decorateInputFieldVal(inpField_,propName_)
       {
          getter=function (){return ((this.value=='')||(this.value==null) ? null : ((this.step??1)==1 ? parseInt(this.value) : parseFloat(this.value)));};   //NOTE: If field value is empty, returns NULL.
          setter=function (newVal_){this.value=((this.step??1)==1 ? parseInt(newVal_??0) : parseFloat(newVal_??0));};
-         inpField_.addEventListener('keypress',(e_)=>{if (['0','1','2','3','4','5','6','7','8','9','e','-','+','.',','].indexOf(e_.key)<0) {e_.key=''; return cancelEvent(e_);}});
+         inpField_.addEventListener('keypress',(e_)=>{if ((['0','1','2','3','4','5','6','7','8','9','e','-','+','.',','].indexOf(e_.key)<0)&&(!(e_.ctrlKey||e_.altKey))) {e_.key=''; return cancelEvent(e_);}});
          break;
       }
       case 'checkbox':
@@ -1381,9 +1381,16 @@ export function buildNodes(struct_,collection_)
       if (res)
       {
          //Collect created node:
-         if (struct_._collectAs)
+         if (struct_._collectAs&&collection_)
          {
-            if (collection_)
+            if (struct_._collectAs instanceof Array)  //Add node deep into a structured collection.
+            {
+               let coll=collection_;
+               for (let i=0;i<struct_._collectAs.length-1;i++)
+                  coll=(coll[struct_._collectAs[i]]??={});
+               coll[struct_._collectAs[struct_._collectAs.length-1]]=res;
+            }
+            else                                      //Add node to the top level of collection.
                collection_[struct_._collectAs]=res;
          }
          
@@ -1645,6 +1652,19 @@ export class DynamicFormItem extends DynamicListItem
    {
       //Set data row ordinal index. See InputFieldsList.rowIndex.
       this._inpFieldsList.rowIndex=newVal_;
+   }
+   
+   get data()
+   {
+      let res={};
+      for (let key of this._inpFieldsList.keys())
+         res[key]=this._inpFieldsList.get(key).valueAsMixed;
+      return res;
+   }
+   set data(data_)
+   {
+      for (let key of this._inpFieldsList.keys())
+         this._inpFieldsList.get(key).valueAsMixed=data_[key]??this._inpFieldsList.get(key).valueAsMixed;
    }
    
    //private props
@@ -3114,9 +3134,10 @@ export function getElementRecursively(object_,keySequence_)
 
 export function clone(obj_)
 {
-   //Clone make a deep clone of the object or array.
+   //Makes a deep clone of an object or array.
+   //NOTE: This function if a fallback for structuredClone(). Use import {clone} from '<script_dir>/js_utils.js'; if (!('structuredClone' in (globalThis??window))) (globalThis??window).structuredClone=clone;
    //NOTE: Use the spread syntax if the cloning shouldn't be deep.
-   //TODO: Revision required: Rewrite using the spread syntax recursively.
+   //TODO: Remove this func when the time for structuredClone will come.
    
    var res=null;
    
@@ -3179,6 +3200,39 @@ export function cloneOverriden(default_,actual_,strict_)
    }
    else
       res=actual_;
+   
+   return res;
+}
+
+function cloneOverridenNew(default_,actual_,options_)
+{
+   //TODO: Incomplete.
+   var res=null;
+   
+   if (default_ instanceof Array)
+   {
+      if ((options_?.strict)&&(actual_!=undefined)&&(!(actual_ instanceof Array)))
+         res=
+         console.warn(LC.get('cloneOverriden: incompartible types'),default_,actual_);
+         
+      if (options_?.mergeArrays)    //Merge default_ and actual_ arrays, keeping element indices.
+      {
+         res=[];
+         let len=Math.max(default_.length,actual_.length);
+         for (var i=0;i<len;i++)
+            res[i]=cloneOverriden(default_[i],actual_[i],options_);
+      }
+      else                          //By default, replace the default_ array with the actual_ array.
+         res=actual_??default_;
+   }
+   else if (default_ instanceof Object)
+   {
+      res={};
+      for (var k in default_)
+         res[k]=cloneOverriden(default_[k],actual_[k],options_);
+   }
+   else
+      res=actual_??default_;
    
    return res;
 }
@@ -3261,7 +3315,7 @@ export function parseCompleteFloat(val_)
    //TODO: Removal candidate: this function has narrow use in specific tasks, so it will be better moved to a separate dedicated lib and reimplemented as decorator.
    console.warn('function parseCompleteFloat() is removal candidate.');
    
-   res=NaN;
+   let res=NaN;
    
    if (typeof val_ =='number')
       res=val_;

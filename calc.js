@@ -1,6 +1,9 @@
-import {buildNodes,clone,parseCompleteFloat,reqServer} from '/core/js_utils.js';
+import {decorateInputFieldVal,bindEvtInputToDeferredChange,buildNodes,clone,parseCompleteFloat,reqServer} from '/core/js_utils.js';
 import * as GU from '/graph_utils.js';
 import {Tool} from '/tools.js';
+
+if (!('structuredClone' in (globalThis??window)))
+   (globalThis??window).structuredClone=clone;
 
 export class CalcTool extends Tool
 {
@@ -40,8 +43,8 @@ export class CalcTool extends Tool
                                      tagName:'div',
                                      className:'opts layout',
                                      childNodes:[
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'Горизонтальная'},{tagName:'input',type:'radio',name:'direction',value:'x'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'Вертикальная'},{tagName:'input',type:'radio',name:'direction',value:'y'}]},
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'Горизонтальная'},{tagName:'input',type:'radio',name:'direction',value:'x',_collectAs:'direction_x'}]},
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'Вертикальная'},{tagName:'input',type:'radio',name:'direction',value:'y',_collectAs:'direction_y'}]},
                                                 ]
                                   },
                                   {tagName:'h3',className:'layout',textContent:'Прогон/ригель (от правого края)'},
@@ -488,7 +491,7 @@ export class CalcTool extends Tool
       this.visuals={bBox:null,scans:[]};
       
       //Prepare and cleanup:
-      var figures=clone(this.parent.figures);
+      var figures=structuredClone(this.parent.figures);
       
       //Start calculations
       var lengths=[];
@@ -515,12 +518,12 @@ export class CalcTool extends Tool
             while (scanBox.rect.lb[norm]<bBox.rt[norm])
             {
                //Get intersection of the matching figures with the scanBox
-               //console.log('scanBox',clone(scanBox));
+               //console.log('scanBox',structuredClone(scanBox));
                var pieces=[];
                for (var i=0;i<figures.length;i++)
                   if (!((figures[i].bBox.rt[norm]<=scanBox.rect.lb[norm])||(figures[i].bBox.lb[norm]>=scanBox.rect.rt[norm])))
                   {  
-                     var figure=this.parent.intersectFigures(clone(figures[i]),clone(scanBox),'intersect');
+                     var figure=this.parent.intersectFigures(structuredClone(figures[i]),structuredClone(scanBox),'intersect');
                      if (figure)
                      {
                         if (figure.type=='compound')
@@ -541,7 +544,7 @@ export class CalcTool extends Tool
                   case 'x':{pieces.sort(bBoxSortXCb); break;}
                   case 'y':{pieces.sort(bBoxSortYCb); break;}
                }
-               //console.log('pieces',clone(pieces));
+               //console.log('pieces',structuredClone(pieces));
                
                var stripes=[];
                //Merge bounding boxes
@@ -577,7 +580,7 @@ export class CalcTool extends Tool
                         var crel=bBox.lb[tang]+c;
                         if ((lastStrp.rect.lb[tang]<crel)&&(crel<lastStrp.rect.rt[tang]))
                         {
-                           var part=clone(lastStrp);
+                           var part=structuredClone(lastStrp);
                            part.rect.rt[tang]=crel;
                            part.l=GU.roundVal(part.rect.rt[tang]-part.rect.lb[tang]);
                            stripes.push(part);
@@ -604,7 +607,7 @@ export class CalcTool extends Tool
                      {
                         stripe.rect.rt[tang]=stripe.rect.lb[tang]+this.stripeMaxLength;
                         stripe.l=this.stripeMaxLength;
-                        buff.push(clone(stripe));
+                        buff.push(structuredClone(stripe));
                         
                         stripe.rect.lb[tang]+=this.stripeMaxLength;
                      }

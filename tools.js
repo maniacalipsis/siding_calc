@@ -1,5 +1,8 @@
-import {buildNodes,clone,getCookie,parseCompleteFloat} from '/core/js_utils.js';
+import {decorateInputFieldVal,bindEvtInputToDeferredChange,buildNodes,clone,getCookie,DynamicForm,DynamicFormItem} from '/core/js_utils.js';
 import * as GU from '/graph_utils.js';
+
+if (!('structuredClone' in (globalThis??window)))
+   (globalThis??window).structuredClone=clone;
 
 //Tool =================================================================================
 export class Tool
@@ -56,14 +59,14 @@ export class StepsTool extends Tool
       //Init steps selector
       this._stepSelectors=[];
       var stpStructs=[
-                        {tagName:'div',className:'sel enabled',childNodes:[{tagName:'span',textContent:'1. Фигура'}],dataset:{step:0}},
-                        {tagName:'div',childNodes:[{tagName:'span',textContent:'2. Размер'}],dataset:{step:1}},
-                        {tagName:'div',childNodes:[{tagName:'span',textContent:'3. Вырез'}],dataset:{step:2}},
-                        {tagName:'div',childNodes:[{tagName:'span',textContent:'4. Размер выреза'}],dataset:{step:3}},
-                        {tagName:'div',childNodes:[{tagName:'span',textContent:'5. Раскладка'}],dataset:{step:4}},
-                        {tagName:'div',childNodes:[{tagName:'span',textContent:'6. Выбор материала'}],dataset:{step:5}},
-                        {tagName:'div',childNodes:[{tagName:'span',textContent:'7. Результат'}],dataset:{step:6}},
-                        {tagName:'div',childNodes:[{tagName:'span',textContent:'8. Получить'}],dataset:{step:7}},
+                        {tagName:'div',className:'step sel enabled',childNodes:[{tagName:'span',textContent:'1. Фигура'}],dataset:{step:0}},
+                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'2. Размер'}],dataset:{step:1}},
+                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'3. Вырез'}],dataset:{step:2}},
+                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'4. Размер выреза'}],dataset:{step:3}},
+                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'5. Раскладка'}],dataset:{step:4}},
+                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'6. Выбор материала'}],dataset:{step:5}},
+                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'7. Результат'}],dataset:{step:6}},
+                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'8. Получить'}],dataset:{step:7}},
                      ];
       for (var stpStruct of stpStructs)
          this._stepSelectors.push(buildNodes(stpStruct));
@@ -72,12 +75,12 @@ export class StepsTool extends Tool
       if (stepsBar)
          for (var stpSel of this._stepSelectors)
          {
-            stpSel.addEventListener('click',(e_)=>{this.step=parseInt(e_.target.dataset.step);});
+            stpSel.addEventListener('click',(e_)=>{this.step=parseInt(e_.target.closest('.step').dataset.step);});
             stepsBar.appendChild(stpSel);
          }
       
-      //Create tool panel
-      var struct={
+      //Tool panel:
+      let struct={
                     tagName:'div',
                     className:'panel steps',
                     childNodes:[
@@ -116,26 +119,20 @@ export class StepsTool extends Tool
    onReady()
    {
       //Recall figures:
-      this._parent.figures=this._parent.getToolByName('memory')?.recall('siding_calc_figures')??[];
+      this._restoreState();
       if (this._parent.figures.length>0)
-         this.step=4; //Skip to the siding layout.
+         this.step=3; //Skip to the siding layout.
    }
    
    //public props
    get name(){return 'steps';}
+   get parent(){return this._parent;}
+   get toolPanel(){return this._toolPanel;}
    
-   get parent()
-   {
-      return this._parent;
-   }
-   
-   get toolPanel()
-   {
-      return this._toolPanel;
-   }
-   
+   get active(){return super.active;}
    set active(val_)
    {
+      super.active=val_;
       if (this.toolPanel)
          this.toolPanel.classList.toggle('active',val_);
    }
@@ -143,6 +140,8 @@ export class StepsTool extends Tool
    get step(){return this._step;}
    set step(val_)
    {
+      //TODO: Replace this trash with a finite state machine.
+      
       //Set step
       if ((0<=val_)&&(val_<=this._maxSteps))
          this._step=val_;
@@ -151,11 +150,8 @@ export class StepsTool extends Tool
          this._farestStep=this._step;
       
       //Force step to very start if there is no figures was drawed
-      if ((this._step>1)&&this.parent.figures.length==0)
-      {
-         this.step=0;
-         return 0;
-      }
+      if ((this._step>1)&&(this.parent.figures.length==0)&&(!this._figureType))
+         return (this._step=0);  //ALERT: EMERGENCY RETURN IS HERE !!!!!!!!!!!!!!!!
       
       //Update direct step selectors
       for (var i=0;i<this._stepSelectors.length;i++)
@@ -178,15 +174,11 @@ export class StepsTool extends Tool
       }
       else  //Remember source figures, then make a compound one from them
       {
-         if (!this._figuresSwap)
-         {
-            this._figuresSwap=this.parent.figures;
-            
-            var figures=this.parent.figures;
-            var compound=this.parent.intersectFigures(figures[0],figures.slice(1),'diff');
-            this.parent.removeAll();
-            this.parent.addFigure(compound);
-         }
+         this._figuresSwap=this.parent.figures;
+         
+         var compound=this.parent.intersectFigures(this.parent.figures[0],this.parent.figures.slice(1),'diff');
+         this.parent.removeAll();
+         this.parent.addFigure(compound);
       }
       
       this._repaintCutsList();
@@ -196,64 +188,62 @@ export class StepsTool extends Tool
       {
          case 0:
          {
-            //Reset:
+            //Choose main figure type:
             if (this.parent.figures.length>0)
             {
                if (confirm('Начать сначала?\n(Все фигуры будут удалены)'))
                {
+                  //Reset:
                   this.parent.removeAll();
                   this._toolPanel.classList.remove('cut');
                   this.parent.activeTool=this;
                   this._figureType='';
                }
                else
-                  this.step++;
+                  this.step++;   //Skip this step.
             }
+            else
+            {/*At this point this._figureType is expect to b set by one of the buttons.*/}
+            
             break;
          }
          case 1:
          {
-            //Select main figure:
-            var tool=null;
-            var figures=this.parent.figures;
-            if (figures.length==0)
+            //Create/setup main figure:
+            let tool=null;
+            if (this.parent.figures.length==0)
             {
-               if (this._figureType=='')
-                  this._figureType='rect';
-               
                this.parent.style.fill='#C8D3E6';
                tool=this.parent.getToolByName(this._figureType);
             }
             else
-            {
-               tool=this.parent.getToolByName(figures[0].type);
-               tool.figure=figures[0];
-            }
+               tool=this.parent.getToolByName(this.parent.figures[0].type);
             
             if (tool)
             {
-               tool.toolPanel.classList.remove('cut');
                this.parent.activeTool=tool;
+               tool.toolPanel.classList.remove('cut');
+               tool.bindToFigure(this.parent.figures[0]);
             }
             
-            this._parent.getToolByName('memory')?.memorize('siding_calc_figures',this._parent.figures);
+            this._saveState();
             
             break;
          }
          case 2:
          {
-            //Define main figure size:
+            //Choose hole figure type:
             this._toolPanel.classList.add('cut');
             this.parent.activeTool=this;
             this._figureType='';
             
-            this._parent.getToolByName('memory')?.memorize('siding_calc_figures',this._parent.figures);
+            this._saveState();
             
             break;
          }
          case 3:
          {
-            //Add hole:
+            //Add/setup holes:
             var selection=this.parent.selection;
             if ((this._figureType=='')&&(selection.length==0))
                this.step++;
@@ -262,10 +252,7 @@ export class StepsTool extends Tool
                
                var tool=null;
                if (selection.length>0)
-               {
-                  tool=this.parent.getToolByName(selection[0].type);
-                  tool.figure=selection[0];
-               }
+                  this.parent.getToolByName(selection[0].type).bindToFigure(selection[0]);
                else
                   tool=this.parent.getToolByName(this._figureType);
                
@@ -278,11 +265,12 @@ export class StepsTool extends Tool
                }
             }
             
-            this._parent.getToolByName('memory')?.memorize('siding_calc_figures',this._parent.figures);
+            this._saveState();
             break;
          }
          case 4:
          {
+            //Setup hole:
             var tool=this.parent.getToolByName('calc');
             if (tool)
             {
@@ -296,7 +284,7 @@ export class StepsTool extends Tool
                }
             }
             
-            this._parent.getToolByName('memory')?.memorize('siding_calc_figures',this._parent.figures);
+            this._saveState();
             break;
          }
          case 5:
@@ -346,6 +334,20 @@ export class StepsTool extends Tool
       }
    }
    
+   prev()
+   {
+      //Helper method for null-chained call.
+      this.step--;
+   }
+   
+   next()
+   {
+      //Helper method for null-chained call.
+      this.step++;
+   }
+   
+   //public methods
+   
    //private methods
    _repaintCutsList()
    {
@@ -355,7 +357,7 @@ export class StepsTool extends Tool
          this._cutsContainer.innerHTML='';
          for (var i=1;i<figures.length;i++)
          {
-            var struct={
+            let struct={
                           tagName:'div',
                           childNodes:[
                                         {tagName:'input',type:'button',className:figures[i].type,value:'',dataset:{indx:i},onclick:(e_)=>{this.parent.select(this.parent.figures[parseInt(e_.target.dataset.indx)]);}},
@@ -371,7 +373,19 @@ export class StepsTool extends Tool
          this._cutsPanel.classList.add('hidden');
    }
    
-   //public methods
+   _saveState()
+   {
+      let mem=this._parent.getToolByName('memory');
+      mem?.memorize('siding_calc_figures',this._parent.figures);
+      mem?.memorize('siding_calc_swap',this._figuresSwap);
+   }
+   
+   _restoreState()
+   {
+      let mem=this._parent.getToolByName('memory');
+      this._parent.figures=mem?.recall('siding_calc_figures')??[];
+      this._figuresSwap=mem?.recall('siding_calc_swap')??null;
+   }
 }
 
 //Hand Pan =================================================================================
@@ -385,8 +399,8 @@ export class HandPanTool extends Tool
       //private props
       this._panStart=null;
       
-      //Create tool panel
-      var struct={
+      //Tool panel:
+      let struct={
                     tagName:'div',
                     className:'panel hand_pan',
                     childNodes:[
@@ -430,54 +444,88 @@ export class HandPanTool extends Tool
 export class FigureTool extends Tool
 {
    //Basic figures drawing tool for Drawer
-   constructor (parent_,type_)
+   constructor (parent_,type_,uiStruct_)
    {
       super(parent_);
       
-      //private props
       this._type=type_;
-      this._figure=null;
-      this._isNew=true;
+      this._createPanel(uiStruct_);
    }
    
-   set figure(figure_)
+   //public props
+   get active(){return super.active;}
+   set active(val_)
    {
-      if (figure_===null)
-      {
-         this._figure=null;
-         this._isNew=true;
-      }
-      else if (figure_.type==this._type)
+      if (val_)
+         this.bindToFigure(this.parent.selection[0]);  //Take a figure from selection.
+      else
+         this.bindToFigure(null);   //Unbind.
+      
+      super.active=val_;
+   }
+   
+   //private props
+   _type='';
+   _figure=null;
+   _isNew=true;
+   _UIElements={};   //Collection for easy access to the UI elements of the tool.
+   
+   //public methods
+   bindToFigure(figure_)
+   {
+      //Binds/unbinds tool to the given figure.
+      
+      if (figure_?.type==this._type)
       {
          this._figure=figure_;
          this._isNew=false;
       }
-   }
-   get figure()
-   {
-      return this._figure;
-   }
-   
-   set active(val_)
-   {
-      if (val_)
-      {
-         //Take figure from selection
-         //console.log(clone(this.parent.selection),this.parent.selection.length&&this.parent.selection[0].type,this._type);
-         if (this.parent.selection.length==1&&this.parent.selection[0].type==this._type)
-         {
-            this.figure=this.parent.selection[0];
-            //this.parent.deselectAll();
-         }
-      }
       else
       {
-         this.figure=null;
+         this._figure=null;
+         this._isNew=true;
+      }
+   }
+   
+   unbind()
+   {
+      //A shorthand for this.bindToFigure(null).
+      
+      this._figure=null;
+      this._isNew=true;
+   }
+   
+   submitFigure()
+   {
+      //Submits the editing figure to the parent.
+      
+      if (this._figure&&this._isNew)
+         this.parent.addFigure(this._figure);
+      this.unbind();
+   }
+   
+   //private methods
+   _createPanel(struct_)
+   {
+      this._toolPanel=buildNodes(struct_,this._UIElements);
+      
+      for (let key in this._UIElements.inputs)
+      {
+         decorateInputFieldVal(this._UIElements.inputs[key]);
+         bindEvtInputToDeferredChange(this._UIElements.inputs[key]);
+         this._UIElements.inputs[key].addEventListener('change',(e_)=>{this.updateFigureFromInputs();});
       }
       
-      super.active=val_;
+      this._UIElements.btnPrev  .addEventListener('click',(e_)=>{this.parent.getToolByName('steps')?.prev(); e_.target.blur();});
+      this._UIElements.btnAddCut.addEventListener('click',(e_)=>{this.submitFigure(); this.parent.getToolByName('steps')?.prev(); e_.target.blur();});
+      this._UIElements.btnNext  .addEventListener('click',(e_)=>{this.submitFigure(); this.parent.getToolByName('steps')?.next(); e_.target.blur();});
    }
-  
+   
+   _updateInputs(data_)
+   {
+      for (var key in data_)
+         this._UIElements.inputs[key].valueAsMixed=data_[key].toFixed(Math.ceil(-Math.log10(this._UIElements.inputs[key].step)));
+   }
 }
 
 //Rect Tool =================================================================================
@@ -486,14 +534,8 @@ export class RectTool extends FigureTool
    //Rect tool class
    constructor (parent_)
    {
-      super(parent_,'rect');
-      
-      //private props
-      this._inputs={x:null,y:null,w:null,h:null};
-      this.grabbedCorner='';
-      
-      //Create tool panel
-      var struct={
+      //Tool panel:
+      let struct={
                     tagName:'div',
                     className:'panel rect',
                     childNodes:[
@@ -503,277 +545,75 @@ export class RectTool extends FigureTool
                                      tagName:'div',
                                      className:'opts size',
                                      childNodes:[
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ширина:'},{tagName:'input',type:'number',name:'rect[w]',step:0.001,value:0},'м']},
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Высота:'},{tagName:'input',type:'number',name:'rect[h]',step:0.001,value:0},'м']}
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ширина:'},{tagName:'input',type:'number',name:'rect[w]',step:0.001,value:0,_collectAs:['inputs','w']},'м']},
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Высота:'},{tagName:'input',type:'number',name:'rect[h]',step:0.001,value:0,_collectAs:['inputs','h']},'м']}
                                                 ]
                                   },
                                   {
                                      tagName:'div',
                                      className:'opts pos',
                                      childNodes:[
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Расстояние слева:'},{tagName:'input',type:'number',name:'rect[x]',step:0.01,value:0},'м']},
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Расстояние от цоколя:'},{tagName:'input',type:'number',name:'rect[y]',step:0.01,value:0},'м']}
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Расстояние слева:'},{tagName:'input',type:'number',name:'rect[x]',step:0.01,value:0,_collectAs:['inputs','x']},'м']},
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Расстояние от цоколя:'},{tagName:'input',type:'number',name:'rect[y]',step:0.01,value:0,_collectAs:['inputs','y']},'м']}
                                                 ]
                                   },
-                                  {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад'},{tagName:'input',type:'button',className:'add_cut',value:'Добавить вырез'},{tagName:'input',type:'button',className:'next',value:'Далее'}]}
+                                  {
+                                     tagName:'div',
+                                     className:'nav',
+                                     childNodes:[
+                                                   {tagName:'input',type:'button',className:'alt prev',value:'Назад',_collectAs:'btnPrev'},
+                                                   {tagName:'input',type:'button',className:'add_cut',value:'Добавить вырез',_collectAs:'btnAddCut'},
+                                                   {tagName:'input',type:'button',className:'next',value:'Далее',_collectAs:'btnNext'},
+                                                ],
+                                  },
                                ]
                  };
-      this._toolPanel=buildNodes(struct);
-      
-      this._inputs.x=this._toolPanel.querySelector('.panel.rect input[name=\'rect[x]\']');
-      this._inputs.y=this._toolPanel.querySelector('.panel.rect input[name=\'rect[y]\']');
-      this._inputs.w=this._toolPanel.querySelector('.panel.rect input[name=\'rect[w]\']');
-      this._inputs.h=this._toolPanel.querySelector('.panel.rect input[name=\'rect[h]\']');
-      
-      this._inputs.x.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({x:this.value},this);});
-      this._inputs.y.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({y:this.value},this);});
-      this._inputs.w.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({w:this.value},this);});
-      this._inputs.h.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({h:this.value},this);});
-      
-      this.btnPrev=this._toolPanel.querySelector('.panel.rect input[type=button].prev');
-      this.btnAdd=this._toolPanel.querySelector('.panel.rect input[type=button].add_cut');
-      this.btnNext=this._toolPanel.querySelector('.panel.rect input[type=button].next');
-      this.btnPrev.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
-      this.btnAdd.addEventListener('click',(e_)=>{if (this.figure&&this.testRect(this.figure.rect)&&this._isNew) this.parent.addFigure(this.figure);  this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
-      this.btnNext.addEventListener('click',(e_)=>{if (this.figure&&this.testRect(this.figure.rect)&&this._isNew) this.parent.addFigure(this.figure);  this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; e_.target.blur();}});
+      super(parent_,'rect',struct);
    }
    
+   //public props
    get name(){return 'rect';}
    
-   set figure(val_)
-   {
-      super.figure=val_;
-      
-      this.updateInputs(this.figure ? GU.rectSize(this.figure.rect) : {x:0,y:0,w:0,h:0});
-      
-   }
-   get figure()
-   {
-      return super.figure;
-   }
-   
-   //private methods
-   updateInputs(size_,actor_)
-   {
-      for (var key in size_)
-         if (this._inputs[key]!=actor_)
-            this._inputs[key].value=size_[key].toFixed(2);
-   }
-   
-   newFigureFromInputs()
-   {
-      var vect={};
-      var errors=0;
-      for (var key in this._inputs)
-      {
-         vect[key]=parseCompleteFloat(this._inputs[key].value);
-         if (isNaN(vect[key]))
-            errors++;
-      }
-      
-      if (!errors)
-      {
-         var rect=GU.rectCorners(vect);
-         
-         if (this.testRect(rect))
-         {
-            this.figure={type:'rect',rect:GU.rectNormalize(rect),style:{...this.parent.style}};
-            this._isNew=true;
-         
-            this.updateInputs(GU.rectSize(this._figure.rect));
-            
-            //this.parent.repaintOverlay();
-            this.parent.fitToViewport(this.parent.figures.length ? this.parent.figures : this.figure);
-         }
-      }
-   }
-   
    //public methods
-   newFigureAtCursor(lb_)
+   bindToFigure(figure_)
    {
-      this.figure={type:'rect',rect:{lb:{...lb_},rt:{...lb_}},style:{...this.parent.style}};
-      this._isNew=true;
-      
-      this.updateInputs(GU.rectSize(this._figure.rect));
+      super.bindToFigure(figure_);
+      this._updateInputs(this._figure ? GU.rectSize(this._figure.rect) : {x:0,y:0,w:0,h:0});
    }
    
-   testRect(rect_)
+   updateFigureFromInputs()
    {
-      var res=false;
+      let vect={};
+      for (let key in this._UIElements.inputs)
+         vect[key]=this._UIElements.inputs[key].valueAsMixed;
       
-      if (rect_&&!isNaN(rect_.lb.x)&&!isNaN(rect_.lb.y)&&!isNaN(rect_.rt.x)&&!isNaN(rect_.rt.y))
+      let rect=GU.rectCorners(vect);
+      if (this._testRect(rect))
       {
-         var size=GU.rectSize(rect_);
-         res=((size.w!=0)&&(size.h!=0));
-      }
-      
-      return res;
-   }
-   
-   applyNewFigure()
-   {
-      this.figure.rect=GU.rectNormalize(this.figure.rect);
-      this.parent.addFigure(this.figure);
-      this.figure=null;
-   }
-   
-   modifyFigure(params_,actor_)
-   {
-      var changed=0;
-      if (this.figure)
-      {
-         var rect=clone(this.figure.rect)
-         var vect=GU.rectVect(rect);
-         for (var key in params_)
-            switch (key)
-            {
-               case 'x':
-               case 'y':
-               case 'w':
-               case 'h':
-               {
-                  vect[key]=parseFloat(params_[key])||0;  //Translate NaN to 0
-                  changed=changed||1;
-                  
-                  break;
-               }
-               case 'rt':
-               case 'lb':
-               {
-                  rect[key].x=parseFloat(params_[key].x)||0;  //Translate NaN to 0
-                  rect[key].y=parseFloat(params_[key].y)||0;  //Translate NaN to 0
-                  changed=changed||2;
-                  
-                  break;
-               }
-               case 'lt':
-               {
-                  rect.lb.x=parseFloat(params_[key].x)||0;  //Translate NaN to 0
-                  rect.rt.y=parseFloat(params_[key].y)||0;  //Translate NaN to 0
-                  changed=changed||2;
-                  
-                  break;
-               }
-               case 'rb':
-               {
-                  rect.rt.x=parseFloat(params_[key].x)||0;  //Translate NaN to 0
-                  rect.lb.y=parseFloat(params_[key].y)||0;  //Translate NaN to 0
-                  changed=changed||2;
-                  
-                  break;
-               }
-               case 'style':
-               {
-                  //TODO:
-                  changed=changed||4;
-               }
-            }
+         rect=GU.rectNormalize(rect);
+         this._figure??={type:this._type,rect:null,style:{...this.parent.style}};
+         this._figure.rect=rect;
          
-         if (changed&1)
-            rect=GU.rectCorners(vect); //Set new position and size
-         
-         if ((changed&3)&&this.testRect(rect))
-         {
-            this.figure.rect=rect;//GU.rectNormalize(rect);
-            this.updateInputs(vect,actor_);
-         }
-         else
-            changed=changed&4;
-         
-         if (changed)
-         {
-            //if (this._isNew)
-            //   this.parent.repaintOverlay();
-            //else
-            //   this.parent.repaint();
-            
-            this.parent.fitToViewport(this.parent.figures.length ? this.parent.figures : this.figure);
-         }
-      }
-      
-      return changed;
-   }
-   
-   onMouseDown(e_)
-   {
-      if (e_.buttons&0b001)
-      {
-         if (!this.figure)
-         {
-            this.newFigureAtCursor(this.parent.cursor);
-            this.grabbedCorner='rt';
-         }
-         else
-         {
-            var rect=this.figure.rect;
-            var cursor=this.parent.cursor;
-            if (GU.ptCmp(rect.lb,cursor))
-               this.grabbedCorner='lb';
-            else if (GU.ptCmp(rect.rt,cursor))
-               this.grabbedCorner='rt';
-            else if (GU.ptCmp({x:rect.lb.x,y:rect.rt.y},cursor))
-               this.grabbedCorner='lt';
-            else if (GU.ptCmp({x:rect.rt.x,y:rect.lb.y},cursor))
-               this.grabbedCorner='rb';
-            else if (GU.isPointInRect(cursor,rect)!==false)
-               this.grabbedCorner='all';
-            else
-            {
-               this.grabbedCorner='';
-               this.figure=null;
-            }
-         }
-      }
-   }
-   
-   onMouseMove(e_)
-   {
-      if (this.figure)
-      {
-         if ((e_.buttons&0b001)&&this.grabbedCorner)
-         {
-            var mod={}
-            mod[this.grabbedCorner]=this.parent.cursor;
-            this.modifyFigure(mod);
-         }
-      }
-   }
-   
-   onMouseUp(e_)
-   {
-      if (this.figure)
-      {
-         if ((!e_.buttons&0b001)&&this.grabbedCorner)  //Test that the 1st, not anoother, button was released
-         {
-            var mod={}
-            mod[this.grabbedCorner]=this.parent.cursor;
-            var changed=this.modifyFigure(mod);
-            
-            if (this._isNew&&changed)
-            {
-               this.applyNewFigure();
-               //this.parent.selectFigure(this.figure);
-            }
-         }
+         this.parent.fitToViewport(this.parent.figures.length ? this.parent.figures : this._figure);
       }
    }
    
    onRepaintOverlay(overlay_)
    {
-      if (this.figure)
+      if (this._figure)
       {
          if (this._isNew)
          {
-            this.parent.paintRect(overlay_,GU.rectNormalize(clone(this.figure.rect)),this.figure.style);
+            this.parent.paintRect(overlay_,GU.rectNormalize(structuredClone(this._figure.rect)),this._figure.style);
          }
          else
          {
             //Paint selection frame
-            var rect=clone(this.figure.rect);
+            var rect=structuredClone(this._figure.rect);
             this.parent.paintRect(overlay_,GU.rectNormalize(rect),{stroke:'rgba(55,184,88,1)'});
             
             //Paint handlers
-            var points=(this.figure.type=='rect' ? GU.outlineRect(this.figure.rect) : this.figure.points);
+            var points=(this._figure.type=='rect' ? GU.outlineRect(this._figure.rect) : this._figure.points);
             for (var pt of points)
             {
                pt=this.parent.pointToCanvas(pt);
@@ -784,22 +624,102 @@ export class RectTool extends FigureTool
       }
    }
    
+   //private methods
+   _testRect(rect_)
+   {
+      var res=false;
+      
+      if (!(isNaN(rect_?.lb?.x)||isNaN(rect_?.lb?.y)||isNaN(rect_?.rt?.x)||isNaN(rect_?.rt?.y)))
+      {
+         let size=GU.rectSize(rect_);
+         res=((size.w!=0)&&(size.h!=0));
+      }
+      
+      return res;
+   }
 }
 
+//Polyline-based Tools ==========================================================================
+class APolyLineTool extends FigureTool
+{
+   //Abstract class for polyline-based tools.
+   constructor (parent_,uiStruct_)
+   {
+      super(parent_,'polyline',uiStruct_);
+   }
+   
+   //public methods
+   bindToFigure(figure_)
+   {
+      super.bindToFigure(figure_);
+      this._updateInputs(this._paramsFromPoints(figure_?.points));
+   }
+   
+   updateFigureFromInputs()
+   {
+      let points=this._pointsFromInputs();
+      if (this._valiatePoints(points))
+      {
+         this._figure??={type:this._type,points:null,style:{...this.parent.style}};
+         this._figure.points=points;
+         
+         this.parent.fitToViewport(this.parent.figures.length ? this.parent.figures : this._figure);
+      }
+   }
+   
+   onRepaintOverlay(overlay_)
+   {
+      if (this._figure)
+      {
+         if (this._isNew)
+            this.parent.paintPolyline(overlay_,this._figure.points,this._figure.style);
+      }
+   }
+   
+   //private methods
+   _preTestPoints(points_,minLength_)
+   {
+      if (points_.length<minLength_)
+         throw new Error('Not enough points');
+         
+      for (let pt of points_)
+         if (isNaN(pt.x)||isNaN(pt.y))
+            throw new Error('NaN in point');
+   }
+   
+   _pointsFromInputs()
+   {
+      let params={};
+      for (let key in this._UIElements.inputs)
+         params[key]=this._UIElements.inputs[key].valueAsMixed;
+      
+      return this._pointsFromParams(params);
+   }
+   
+   _paramsFromPoints(points_)
+   {
+      throw new Error('Call of abstract method');
+   }
+   
+   _pointsFromParams(params_)
+   {
+      //NOTE: Child class may not implement this method if it overrides _pointsFromInputs() w/o _pointsFromParams().
+      throw new Error('Call of abstract method');
+   }
+   
+   _valiatePoints(points_)
+   {
+      throw new Error('Call of abstract method');
+   }
+}
 //Triangle Tool =================================================================================
-export class TriangleTool extends FigureTool
+export class TriangleTool extends APolyLineTool
 {
    //Rect tool class
    constructor (parent_)
    {
-      super(parent_,'polyline');
-      
-      //private props
-      this._inputs={x:null,y:null,w:null,h:null};
-      this.grabbedCorner='';
-      
-      //Create tool panel
-      var struct={
+      //Tool panel:
+      let struct={
                     tagName:'div',
                     className:'panel triangle',
                     childNodes:[
@@ -809,224 +729,93 @@ export class TriangleTool extends FigureTool
                                      tagName:'div',
                                      className:'opts size',
                                      childNodes:[
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ш:'},{tagName:'input',type:'number',name:'triangle[w]',step:0.001,value:0},'м']},
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'В:'},{tagName:'input',type:'number',name:'triangle[h]',step:0.001,value:0},'м']},
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'С:'},{tagName:'input',type:'number',name:'triangle[c]',step:0.001,value:0},'м']}
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ш:'},{tagName:'input',type:'number',name:'triangle[w]',step:0.001,value:0,_collectAs:['inputs','w']},'м']},
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'В:'},{tagName:'input',type:'number',name:'triangle[h]',step:0.001,value:0,_collectAs:['inputs','h']},'м']},
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'С:'},{tagName:'input',type:'number',name:'triangle[c]',step:0.001,value:0,_collectAs:['inputs','c']},'м']}
                                                 ]
                                   },
                                   {
                                      tagName:'div',
                                      className:'opts pos',
                                      childNodes:[
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Расстояние слева:'},{tagName:'input',type:'number',name:'triangle[x]',step:0.01,value:0},'м']},
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Расстояние от цоколя:'},{tagName:'input',type:'number',name:'triangle[y]',step:0.01,value:0},'м']}
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Расстояние слева:'},{tagName:'input',type:'number',name:'triangle[x]',step:0.01,value:0,_collectAs:['inputs','x']},'м']},
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Расстояние от цоколя:'},{tagName:'input',type:'number',name:'triangle[y]',step:0.01,value:0,_collectAs:['inputs','y']},'м']}
                                                 ]
                                   },
-                                  {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад'},{tagName:'input',type:'button',className:'add_cut',value:'Добавить вырез'},{tagName:'input',type:'button',className:'next',value:'Далее'}]}
-                               ]
+                                  {
+                                     tagName:'div',
+                                     className:'nav',
+                                     childNodes:[
+                                                   {tagName:'input',type:'button',className:'alt prev',value:'Назад',_collectAs:'btnPrev'},
+                                                   {tagName:'input',type:'button',className:'add_cut',value:'Добавить вырез',_collectAs:'btnAddCut'},
+                                                   {tagName:'input',type:'button',className:'next',value:'Далее',_collectAs:'btnNext'},
+                                                ],
+                                  },
+                               ],
                  };
-      this._toolPanel=buildNodes(struct);
-      
-      this._inputs.x=this._toolPanel.querySelector('.panel.triangle input[name=\'triangle[x]\']');
-      this._inputs.y=this._toolPanel.querySelector('.panel.triangle input[name=\'triangle[y]\']');
-      this._inputs.w=this._toolPanel.querySelector('.panel.triangle input[name=\'triangle[w]\']');
-      this._inputs.h=this._toolPanel.querySelector('.panel.triangle input[name=\'triangle[h]\']');
-      this._inputs.c=this._toolPanel.querySelector('.panel.triangle input[name=\'triangle[c]\']');
-      
-      this._inputs.x.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({x:e_.target.value},e_.target);});
-      this._inputs.y.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({y:e_.target.value},e_.target);});
-      this._inputs.w.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({w:e_.target.value},e_.target);});
-      this._inputs.h.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({h:e_.target.value},e_.target);});
-      this._inputs.c.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({c:e_.target.value},e_.target);});
-      
-      this.btnPrev=this._toolPanel.querySelector('.panel.triangle input[type=button].prev');
-      this.btnAdd=this._toolPanel.querySelector('.panel.triangle input[type=button].add_cut');
-      this.btnNext=this._toolPanel.querySelector('.panel.triangle input[type=button].next');
-      this.btnPrev.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
-      this.btnAdd.addEventListener('click',(e_)=>{if (this.figure&&this.testTriangle(this.figure)&&this._isNew) this.parent.addFigure(this.figure);  this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
-      this.btnNext.addEventListener('click',(e_)=>{if (this.figure&&this.testTriangle(this.figure)&&this._isNew) this.parent.addFigure(this.figure);  this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; e_.target.blur();}});
+      super(parent_,struct);
    }
    
+   //public props
    get name(){return 'triangle';}
    
-   set figure(val_)
-   {
-      super.figure=val_;
-      
-      console.log('set figure',val_);
-      
-      this.updateInputs(this._parametrize(val_));
-   }
-   get figure()
-   {
-      return super.figure;
-   }
+   //public methods
    
    //private methods
-   _parametrize(figure_)
+   _paramsFromPoints(points_)
    {
       var res={x:0,y:0,w:0,h:0,c:0};
       
-      if (figure_&&figure_.points&&figure_.points.length==3)
+      if (points_?.length==3)
       {
-         res.x=figure_.points[0].x;
-         res.y=figure_.points[0].y;
-         res.w=figure_.points[2].x-figure_.points[0].x;
-         res.h=figure_.points[1].y-figure_.points[0].y;
-         res.c=figure_.points[1].x-figure_.points[0].x;
+         res.x=points_[0].x;
+         res.y=points_[0].y;
+         res.w=points_[2].x-points_[0].x;
+         res.h=points_[1].y-points_[0].y;
+         res.c=points_[1].x-points_[0].x;
       }
       
-      console.log('_parametrize',figure_,res);
       return res;
    }
    
    _pointsFromParams(params_)
    {
       return [
-                {x:params_.x,y:params_.y},
-                {x:params_.x+params_.c,y:params_.y+params_.h},
-                {x:params_.x+params_.w,y:params_.y}
+                {x:params_.x,y:params_.y},                     //Bottom left.
+                {x:params_.x+params_.c,y:params_.y+params_.h}, //Top.
+                {x:params_.x+params_.w,y:params_.y}            //Bottom right.
              ];
    }
    
-   updateInputs(params_,actor_)
+   _valiatePoints(points_)
    {
-      for (var key in params_)
-         if (this._inputs[key]!=actor_)
-            this._inputs[key].value=params_[key].toFixed(2);
-   }
-   
-   newFigureFromInputs()
-   {
-      var params={};
-      var errors=0;
-      for (var key in this._inputs)
+      let res=false;
+      try
       {
-         params[key]=parseCompleteFloat(this._inputs[key].value);
-         if (isNaN(params[key]))
-            errors++;
-      }
-      if ((params.w<=0)||(params.h<=0))
-         errors++;
-      
-      console.log('newFigureFromInputs',params,errors);
-      
-      if (!errors)
-      {
-         var style={...this.parent.style};
-         style.closed=true;
-         var figure={type:'polyline',points:this._pointsFromParams(params),style:style};
-         //console.log(figure);
-         if (this.testTriangle(figure))
-         {
-            
-            this.figure=figure;
-            this._isNew=true;
-            
-            this.parent.fitToViewport(this.parent.figures.length ? this.parent.figures : this.figure);
-            //this.parent.repaintOverlay();
-         }
-      }
-   }
-   
-   modifyFigure(newParams_,actor_)
-   {
-      var changed=0;
-      if (this.figure)
-      {
-         var params=this._parametrize(this.figure);
+         this._preTestPoints(points_,3);
          
-         for (var key in newParams_)
-            switch (key)
-            {
-               case 'x':
-               case 'y':
-               case 'w':
-               case 'h':
-               case 'c':
-               {
-                  params[key]=parseFloat(newParams_[key])||0;  //Translate NaN to 0
-                  changed=changed||1;
-                  
-                  break;
-               }
-               case 'style':
-               {
-                  //TODO:
-                  changed=changed||4;
-                  break;
-               }
-            }
+         if ((points_[2].x-points_[0].x)<Number.EPSILON)
+            throw new Error('Triangle base has zero or negative length');
+         if ((points_[1].y-points_[0].y)<Number.EPSILON)
+            throw new Error('Triangle has zero or negative height');
          
-         console.log('modifyFigure',params,changed);
-         
-         if (changed&1)
-         {
-            this.figure.points=this._pointsFromParams(params);
-            this.updateInputs(params,actor_);
-         }
-         else
-            changed=changed&4;
-         
-         if (changed)
-         {
-            //if (this._isNew)
-            //   this.parent.repaintOverlay();
-            //else
-            //   this.parent.repaint();
-            this.parent.fitToViewport(this.parent.figures.length ? this.parent.figures : this.figure);
-         }
-      }
-      
-      return changed;
-   }
-   
-   //public methods
-   testTriangle(figure_)
-   {
-      var res=false;
-      
-      if (figure_&&figure_.points&&
-          (figure_.points.length==3)&&
-          ((figure_.points[2].x-figure_.points[0].x)>0)&&
-          ((figure_.points[1].y-figure_.points[0].y)>0))
          res=true;
-      
-      return res;
-   }
-   
-   applyNewFigure()
-   {
-      console.log('applyNewFigure',this.figure);
-      
-      this.parent.addFigure(this.figure);
-      this.figure=null;
-   }
-   
-   onRepaintOverlay(overlay_)
-   {
-      console.log('onRepaintOverlay',this.figure);
-      if (this.figure)
+      }
+      finally
       {
-         this.parent.paintPolyline(overlay_,this.figure.points,this.parent.style);
+         return res;
       }
    }
 }
 
 //Triangle Tool =================================================================================
-export class TrapezoidTool extends FigureTool
+export class TrapezoidTool extends APolyLineTool
 {
    //Rect tool class
    constructor (parent_)
    {
-      super(parent_,'polyline');
-      
-      //private props
-      this._inputs={x:null,y:null,w:null,h:null};
-      this.grabbedCorner='';
-      
-      //Create tool panel
-      var struct={
+      //Tool panel:
+      let struct={
                     tagName:'div',
                     className:'panel trapezoid',
                     childNodes:[
@@ -1036,232 +825,98 @@ export class TrapezoidTool extends FigureTool
                                      tagName:'div',
                                      className:'opts size',
                                      childNodes:[
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ш:'},{tagName:'input',type:'number',name:'trapezoid[w]',step:0.001,value:0},'м']},
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'В:'},{tagName:'input',type:'number',name:'trapezoid[h]',step:0.001,value:0},'м']},
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ш'},{tagName:'sub',textContent:'2'},{tagName:'span',textContent:':'},{tagName:'input',type:'number',name:'trapezoid[w2]',step:0.001,value:0},'м']},
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'С:'},{tagName:'input',type:'number',name:'trapezoid[c]',step:0.001,value:0},'м']}
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ш:'},{tagName:'input',type:'number',name:'trapezoid[w]',step:0.001,value:0,_collectAs:['inputs','w']},'м']},
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'В:'},{tagName:'input',type:'number',name:'trapezoid[h]',step:0.001,value:0,_collectAs:['inputs','h']},'м']},
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Ш'},{tagName:'sub',textContent:'2'},{tagName:'span',textContent:':'},{tagName:'input',type:'number',name:'trapezoid[w2]',step:0.001,value:0,_collectAs:['inputs','w2']},'м']},
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'С:'},{tagName:'input',type:'number',name:'trapezoid[c]',step:0.001,value:0,_collectAs:['inputs','c']},'м']}
                                                 ]
                                   },
                                   {
                                      tagName:'div',
                                      className:'opts pos',
                                      childNodes:[
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Расстояние слева:'},{tagName:'input',type:'number',name:'trapezoid[x]',step:0.01,value:0},'м']},
-                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Расстояние от цоколя:'},{tagName:'input',type:'number',name:'trapezoid[y]',step:0.01,value:0},'м']}
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Расстояние слева:'},{tagName:'input',type:'number',name:'trapezoid[x]',step:0.01,value:0,_collectAs:['inputs','x']},'м']},
+                                                   {tagName:'label',childNodes:[{tagName:'span',textContent:'Расстояние от цоколя:'},{tagName:'input',type:'number',name:'trapezoid[y]',step:0.01,value:0,_collectAs:['inputs','y']},'м']}
                                                 ]
                                   },
-                                  {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад'},{tagName:'input',type:'button',className:'add_cut',value:'Добавить вырез'},{tagName:'input',type:'button',className:'next',value:'Далее'}]}
+                                  {
+                                     tagName:'div',
+                                     className:'nav',
+                                     childNodes:[
+                                                   {tagName:'input',type:'button',className:'alt prev',value:'Назад',_collectAs:'btnPrev'},
+                                                   {tagName:'input',type:'button',className:'add_cut',value:'Добавить вырез',_collectAs:'btnAddCut'},
+                                                   {tagName:'input',type:'button',className:'next',value:'Далее',_collectAs:'btnNext'},
+                                                ],
+                                  },
                                ]
                  };
-      this._toolPanel=buildNodes(struct);
-      
-      this._inputs.x=this._toolPanel.querySelector('.panel.trapezoid input[name=\'trapezoid[x]\']');
-      this._inputs.y=this._toolPanel.querySelector('.panel.trapezoid input[name=\'trapezoid[y]\']');
-      this._inputs.w=this._toolPanel.querySelector('.panel.trapezoid input[name=\'trapezoid[w]\']');
-      this._inputs.h=this._toolPanel.querySelector('.panel.trapezoid input[name=\'trapezoid[h]\']');
-      this._inputs.w2=this._toolPanel.querySelector('.panel.trapezoid input[name=\'trapezoid[w2]\']');
-      this._inputs.c=this._toolPanel.querySelector('.panel.trapezoid input[name=\'trapezoid[c]\']');
-      
-      this._inputs.x.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({x:e_.target.value},e_.target);});
-      this._inputs.y.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({y:e_.target.value},e_.target);});
-      this._inputs.w.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({w:e_.target.value},e_.target);});
-      this._inputs.h.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({h:e_.target.value},e_.target);});
-      this._inputs.w2.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({w2:e_.target.value},e_.target);});
-      this._inputs.c.addEventListener('input',(e_)=>{if(!this.figure) this.newFigureFromInputs(); else this.modifyFigure({c:e_.target.value},e_.target);});
-      
-      this.btnPrev=this._toolPanel.querySelector('.panel.trapezoid input[type=button].prev');
-      this.btnAdd=this._toolPanel.querySelector('.panel.trapezoid input[type=button].add_cut');
-      this.btnNext=this._toolPanel.querySelector('.panel.trapezoid input[type=button].next');
-      this.btnPrev.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
-      this.btnAdd.addEventListener('click',(e_)=>{if (this.figure&&this.testTrapezoid(this.figure)&&this._isNew) this.parent.addFigure(this.figure);  this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
-      this.btnNext.addEventListener('click',(e_)=>{if (this.figure&&this.testTrapezoid(this.figure)&&this._isNew) this.parent.addFigure(this.figure);  this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; e_.target.blur();}});
-      
+      super(parent_,struct);
    }
    
+   //public props
    get name(){return 'trapezoid';}
    
-   set figure(val_)
-   {
-      super.figure=val_;
-      
-      console.log('set figure',val_);
-      
-      this.updateInputs(this._parametrize(val_));
-   }
-   get figure()
-   {
-      return super.figure;
-   }
+   //public methods
    
    //private methods
-   _parametrize(figure_)
+   _paramsFromPoints(points_)
    {
       var res={x:0,y:0,w:0,h:0,w2:0,c:0};
       
-      if (figure_&&figure_.points&&figure_.points.length==4)
+      if (points_?.length==4)
       {
-         res.x=figure_.points[0].x;
-         res.y=figure_.points[0].y;
-         res.w=figure_.points[3].x-figure_.points[0].x;
-         res.h=figure_.points[1].y-figure_.points[0].y;
-         res.w2=figure_.points[2].x-figure_.points[1].x;
-         res.c=figure_.points[1].x-figure_.points[0].x;
+         res.x =points_[0].x;
+         res.y =points_[0].y;
+         res.w =points_[3].x-points_[0].x;
+         res.h =points_[1].y-points_[0].y;
+         res.w2=points_[2].x-points_[1].x;
+         res.c =points_[1].x-points_[0].x;
       }
       
-      console.log('_parametrize',figure_,res);
       return res;
    }
    
    _pointsFromParams(params_)
    {
       return [
-                {x:params_.x,y:params_.y},
-                {x:params_.x+params_.c,y:params_.y+params_.h},
-                {x:params_.x+params_.c+params_.w2,y:params_.y+params_.h},
-                {x:params_.x+params_.w,y:params_.y}
+                {x:params_.x,y:params_.y},                                 //Bottom left.
+                {x:params_.x+params_.c,y:params_.y+params_.h},             //Top left.
+                {x:params_.x+params_.c+params_.w2,y:params_.y+params_.h},  //Top right.
+                {x:params_.x+params_.w,y:params_.y}                        //Bottom right.
              ];
    }
    
-   updateInputs(params_,actor_)
+   _valiatePoints(points_)
    {
-      for (var key in params_)
-         if (this._inputs[key]!=actor_)
-            this._inputs[key].value=params_[key].toFixed(2);
-   }
-   
-   newFigureFromInputs()
-   {
-      var params={};
-      var errors=0;
-      for (var key in this._inputs)
+      let res=false;
+      try
       {
-         params[key]=parseCompleteFloat(this._inputs[key].value);
-         if (isNaN(params[key]))
-            errors++;
-      }
-      if ((params.w<=0)||(params.h<=0))
-         errors++;
-      
-      console.log('newFigureFromInputs',params,errors);
-      
-      if (!errors)
-      {
-         var style={...this.parent.style};
-         style.closed=true;
-         var figure={type:'polyline',points:this._pointsFromParams(params),style:style};
-         //console.log(figure);
-         if (this.testTrapezoid(figure))
-         {
-            
-            this.figure=figure;
-            this._isNew=true;
-            
-            //this.parent.repaintOverlay();
-            this.parent.fitToViewport(this.parent.figures.length ? this.parent.figures : this.figure);
-         }
-      }
-   }
-   
-   modifyFigure(newParams_,actor_)
-   {
-      var changed=0;
-      if (this.figure)
-      {
-         var params=this._parametrize(this.figure);
+         this._preTestPoints(points_,4);
          
-         for (var key in newParams_)
-            switch (key)
-            {
-               case 'x':
-               case 'y':
-               case 'w':
-               case 'h':
-               case 'w2':
-               case 'c':
-               {
-                  params[key]=parseFloat(newParams_[key])||0;  //Translate NaN to 0
-                  changed=changed||1;
-                  
-                  break;
-               }
-               case 'style':
-               {
-                  //TODO:
-                  changed=changed||4;
-                  break;
-               }
-            }
+         if ((points_[3].x-points_[0].x)<Number.EPSILON)
+            throw new Error('Trapezoid base has zero or negative length');
+         if ((points_[1].y-points_[0].y)<Number.EPSILON)
+            throw new Error('Trapezoid has zero or negative height');
+         if ((points_[2].x-points_[1].x)<Number.EPSILON)
+            throw new Error('Trapezoid top side has zero or negative length');
          
-         console.log('modifyFigure',params,changed);
-         
-         if (changed&1)
-         {
-            this.figure.points=this._pointsFromParams(params);
-            this.updateInputs(params,actor_);
-         }
-         else
-            changed=changed&4;
-         
-         if (changed)
-         {
-            //if (this._isNew)
-            //   this.parent.repaintOverlay();
-            //else
-            //   this.parent.repaint();
-            this.parent.fitToViewport(this.parent.figures.length ? this.parent.figures : this.figure);
-         }
-      }
-      
-      return changed;
-   }
-   
-   //public methods
-   testTrapezoid(figure_)
-   {
-      var res=false;
-      
-      if (figure_&&figure_.points&&
-          (figure_.points.length==4)&&
-          ((figure_.points[3].x-figure_.points[0].x)>0)&&
-          ((figure_.points[1].y-figure_.points[0].y)>0)&&
-          ((figure_.points[2].x-figure_.points[1].x)>0))
          res=true;
-      
-      return res;
-   }
-   
-   applyNewFigure()
-   {
-      console.log('applyNewFigure',this.figure);
-      
-      this.parent.addFigure(this.figure);
-      this.figure=null;
-   }
-   
-   onRepaintOverlay(overlay_)
-   {
-      console.log('onRepaintOverlay',this.figure);
-      if (this.figure)
+      }
+      finally
       {
-         this.parent.paintPolyline(overlay_,this.figure.points,this.parent.style);
+         return res;
       }
    }
 }
 
 //Polyline =====================================================================================
-export class PolyLineTool extends FigureTool
+export class PolyLineTool extends APolyLineTool
 {
    //Polyline
    constructor(parent_)
    {
-      super(parent_,'polyline');
-      
-      //private props
-      this._inputList=null;
-      this._grabbedPoint=-1;
-      
-      //Create tool panel
-      var struct={
+      //Tool panel:
+      let struct={
                     tagName:'div',
                     className:'panel line',
                     childNodes:[
@@ -1274,415 +929,66 @@ export class PolyLineTool extends FigureTool
                                                     {
                                                        tagName:'div',
                                                        className:'points',
-                                                       childNodes:[
-                                                                     {
-                                                                        tagName:'div',
-                                                                        className:'point',
-                                                                        childNodes:[
-                                                                                      {tagName:'label',childNodes:[{tagName:'span',textContent:'X:'},{tagName:'input',type:'number',name:'point[x]',step:0.001,value:0}]},
-                                                                                      {tagName:'label',childNodes:[{tagName:'span',textContent:'Y:'},{tagName:'input',type:'number',name:'point[y]',step:0.001,value:0}]},
-                                                                                      {tagName:'input',className:'tool ok add',type:'button',value:'+',title:'Add'},
-                                                                                      {tagName:'input',className:'tool clr',type:'button',value:'✕',title:'Delete'}
-                                                                                   ],
-                                                                        dataset:{indx:0}
-                                                                     }
-                                                                  ]
+                                                       childNodes:[],
+                                                       _collectAs:'ptsInpListNode',
                                                     },
-                                                    //{tagName:'div',className:'actions',childNodes:[{tagName:'input',type:'button',className:'tool del cancel',value:'',title:'Cancel'},{tagName:'input',type:'button',className:'tool ok draw',value:'',title:'Draw'}]},
                                                 ]
                                   },
-                                  {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад'},{tagName:'input',type:'button',className:'add_cut',value:'Добавить вырез'},{tagName:'input',type:'button',className:'next',value:'Далее'}]}
+                                  {
+                                     tagName:'div',
+                                     className:'nav',
+                                     childNodes:[
+                                                   {tagName:'input',type:'button',className:'alt prev',value:'Назад',_collectAs:'btnPrev'},
+                                                   {tagName:'input',type:'button',className:'add_cut',value:'Добавить вырез',_collectAs:'btnAddCut'},
+                                                   {tagName:'input',type:'button',className:'next',value:'Далее',_collectAs:'btnNext'},
+                                                ],
+                                  },
                                ]
                  };
-      this._toolPanel=buildNodes(struct);
-      this._inputList=this._toolPanel.querySelector('.panel.line .opts .points');
-      this.initInputNode(this._inputList.childNodes[0]);
-      
-      this.btnPrev=this._toolPanel.querySelector('.panel.line input[type=button].prev');
-      this.btnAdd=this._toolPanel.querySelector('.panel.line input[type=button].add_cut');
-      this.btnNext=this._toolPanel.querySelector('.panel.line input[type=button].next');
-      this.btnPrev.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
-      this.btnAdd.addEventListener('click',(e_)=>{if (this.figure&&this.testLine(this.figure)&&this._isNew) this.applyNewFigure(); this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
-      this.btnNext.addEventListener('click',(e_)=>{if (this.figure&&this.testLine(this.figure)&&this._isNew) this.applyNewFigure(); this.figure=null; var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; e_.target.blur();}});
+      let ptsInpListItemStruct={
+                                  tagName:'div',
+                                  className:'item point',
+                                  childNodes:[
+                                                {tagName:'label',childNodes:[{tagName:'span',textContent:'X:'},{tagName:'input',type:'number',name:'point[0][x]',step:0.001,value:0,_collectAs:['inputs','x']}]},
+                                                {tagName:'label',childNodes:[{tagName:'span',textContent:'Y:'},{tagName:'input',type:'number',name:'point[0][y]',step:0.001,value:0,_collectAs:['inputs','y']}]},
+                                                {tagName:'input',className:'tool ok add',type:'button',value:'+',title:'Add',_collectAs:'btnAdd'},
+                                                {tagName:'input',className:'tool clr',type:'button',value:'✕',title:'Delete',_collectAs:'btnDel'}
+                                             ],
+                               };
+      super(parent_,struct);
+      this._ptsInpList=new DynamicForm(this,{itemClass:PolylinePtsItem,itemClassParams:{nodeStruct:ptsInpListItemStruct,inputFieldsListParams:{}},listNode:this._UIElements.ptsInpListNode,minLength:1});
    }
    
+   //public props
    get name(){return 'polyline';}
    
-   set figure(val_)
-   {
-      super.figure=val_;
-      
-      this.updateInputs();
-   }
-   get figure()
-   {
-      return this._figure;
-   }
+   //private props
+   _ptsInpList=null;  //DynamicForm for polyline points input.
    
-   //private methods
-   testLine(figure_)
-   {
-      return (figure_.points.length>2&&(GU.selfXSections(figure_.points,figure_.style.closed).length==0));
-   }
-   
-   applyNewFigure()
-   {
-      if (!GU.isNormalsOutside(this.figure.points))
-         this.figure.points.reverse();
-      
-      if (GU.ptCmp(this.figure.points[0],this.figure.points[this.figure.points.length-1]))
-         this.figure.points.pop();
-      
-      var style={...this.parent.style};
-      style.closed=true;
-      
-      this.parent.addFigure({type:'polyline',points:this.figure.points,style:style});
-      this.figure=null;
-   }
-   
-   initInputNode(node_)
-   {
-      var inpX=node_.querySelector('input[name=\'point[x]\']');
-      var inpY=node_.querySelector('input[name=\'point[y]\']');
-      var btnA=node_.querySelector('input[type=button].add');
-      var btnX=node_.querySelector('input[type=button].clr');
-      inpX.addEventListener('input',(e_)=>{this.onCoordInput('x',e_.target.closest('.point').dataset.indx,e_.target.value);});
-      inpY.addEventListener('input',(e_)=>{this.onCoordInput('y',e_.target.closest('.point').dataset.indx,e_.target.value);});
-      btnX.addEventListener('click',(e_)=>{this.onBtnXClick(e_.target.closest('.point').dataset.indx); e_.target.blur();});
-      btnA.addEventListener('click',(e_)=>{this.onBtnAddClick(e_.target.closest('.point').dataset.indx); e_.target.blur();});
-   }
-   
-   updateNthInput(n_,pt_)
-   {
-      if (n_>=0&&n_<this._inputList.childNodes.length)
-      {
-         this._inputList.childNodes[n_].dataset.indx=n_;
-         
-         var inpX=this._inputList.childNodes[n_].querySelector('input[name=\'point[x]\']');
-         var inpY=this._inputList.childNodes[n_].querySelector('input[name=\'point[y]\']');
-         if (inpX)
-            inpX.value=pt_.x.toFixed(6);
-         
-         if (inpY)
-            inpY.value=pt_.y.toFixed(6);
-      }
-   }
-   
-   updateInputs()
-   {
-      if (this._inputList)
-      {
-         var nodes=this._inputList.children;
-         var toRemove=this._inputList.children.length-1;
-         if (this.figure&&this.figure.points.length>0)
-         {
-            var points=this.figure.points;
-            //console.log('figure',nodes,points);
-            for (var i=0;i<points.length;i++)
-            {
-               if (nodes.length<=i)
-               {
-                  //console.log('add node');
-                  var newNode=nodes[nodes.length-1].cloneNode(true);
-                  this.initInputNode(newNode);
-                  this._inputList.appendChild(newNode);
-               }
-               this.updateNthInput(i,points[i]);
-            }
-            toRemove=nodes.length-points.length;
-         }
-         
-         for (var i=0;i<toRemove;i++)
-            this._inputList.removeChild(nodes[nodes.length-1]);
-         
-         this.parent.repaint();
-      }
-   }
-   
-   onCoordInput(axis_,index_,val_)
-   {
-      //Coordinates numeric input handler
-      
-      console.log('onCoordInput',index_,axis_,val_);
-      val_=parseCompleteFloat(val_);
-      if (!isNaN(val_))
-      {
-         if (!this._figure)
-         {
-            var item=this._inputList.children[0];
-            var inpX=item.querySelector('input[name=\'point[x]\']');
-            var inpY=item.querySelector('input[name=\'point[y]\']');
-            var pt={x:parseCompleteFloat(inpX.value),y:parseCompleteFloat(inpY.value)};
-            
-            if (!(isNaN(pt.x)||isNaN(pt.y)))
-               this.insertPoint(this.parent.snapToGrid(pt),index_+1);
-         }
-         else if (this._figure.points.length>index_)
-         {
-            this._figure.points[index_][axis_]=val_;       //Update existing point
-            //this.parent.repaint();
-            this.parent.fitToViewport(this.parent.figures.length ? this.parent.figures : this.figure);
-         }
-      }
-   }
-   
-   onBtnAddClick(index_)
-   {
-      //Add point button handler
-      console.log('onBtnAddClick',index_);
-      index_=parseInt(index_); 
-      var pt={x:0,y:0};
-      
-      if (this._figure&&((index_+1)<this._figure.points.length))
-      {
-         pt=GU.midPoint(this._figure.points[index_],this._figure.points[index_+1]);  //New point splits a polyline segment
-         console.log('subdiv',index_);
-      }
-      else if (this._figure&&this._figure.style.closed)
-      {
-         pt=GU.midPoint(this._figure.points[index_],this._figure.points[0]);       //New point splits segment between last and first points of a closed figure
-         console.log('subdiv last',index_);
-      }
-      else
-      {
-         var item=this._inputList.childNodes[this._inputList.children.length-1];
-         var inpX=item.querySelector('input[name=\'point[x]\']');
-         var inpY=item.querySelector('input[name=\'point[y]\']');
-         var x=parseCompleteFloat(inpX.value);
-         var y=parseCompleteFloat(inpY.value);
-         
-         if (!isNaN(x))
-            pt.x=x;
-         if (!isNaN(y))
-            pt.y=y;
-         
-         console.log('add new',index_,pt);
-      }
-      this.insertPoint(this.parent.snapToGrid(pt),index_+1);
-   }
-   
-   onBtnXClick(index_)
-   {
-      //Remove point button handler
-      
-      this.removePoint(index_);
-   }
-   
-   //public methods
-   removePoint(indx_)
-   {
-      if (this.figure&&this.figure.points.length>3)
-      {
-         this.figure.points.splice(indx_,1);
-         
-      }
-      this.updateInputs();
-   }
-   
-   insertPoint(pt_,indx_)
-   {
-      if (!this.figure)
-      {
-         this.figure={type:'polyline',points:[],style:{...this.parent.style}};
-         this._isNew=true;
-         
-         this.figure.points.push(GU.roundPoint({...pt_})); //Add root point
-      }
-      
-      if (indx_===undefined||this.figure.points.length<indx_)
-      {
-         if (GU.ptCmp(this.figure.points[0],pt_)&&this.testLine(this.figure))
-            this.applyNewFigure();
-         else
-         {
-            this.figure.points.push({...pt_}); //Add new point
-            console.log('add pt');
-         }
-      }
-      else
-         this.figure.points.splice(indx_,0,GU.roundPoint({...pt_}));
-      
-      this.updateInputs();
-   }
-   
-   onClick(e_)
-   {
-      if (this._isNew)
-         this.insertPoint(this.parent.cursor);
-   }
-   
-   onMouseDown(e_)
-   {
-      if (!this._isNew&&this.figure)
-      {
-         for (var i=0;i<this.figure.points.length;i++)
-            if (GU.ptCmp(this.figure.points[i],this.parent.cursor))
-            {
-               this._grabbedPoint=i;
-               break;
-            }
-         //console.log(this._grabbedPoint);
-      }
-   }
-   
-   onKeyDown(e_)
-   {
-      var ret=true;
-      
-      if (this.figure&&this.figure.points.length>1)
-      {
-         switch (e_.key)
-         {
-            case 'End':
-            case 'Enter':
-            {
-               //Apply path
-               
-               var figure={type:'polyline',points:this.figure.points,style:{...this.parent.style}};
-               var buff=null;
-               
-               if (GU.ptCmp(figure.points[0],figure.points[figure.points.length-1]))   //Remove closing point
-               {
-                  buff=figure.points.pop();
-                  figure.style.closed=true;
-               }
-               
-               if (GU.selfXSections(figure.points,figure.style.closed).length==0)
-                  this.applyNewFigure();
-               else if (buff)
-                  figure.points.push(buff);
-               
-               ret=false;
-               break;
-            }
-            case 'Backspace':
-            {
-               //Remove last point
-               this.figure.points.pop();
-               ret=false;
-               break;
-            }
-            case 'Escape':
-            {
-               //Cancel path
-               this.figure=null;
-               ret=false;
-               break;
-            }
-            case 'Control':
-            {
-               //Lock cursor
-               var prev=this.figure.points[this.figure.points.length-2];
-               var last=this.figure.points[this.figure.points.length-1];
-               if (Math.abs(last.y-prev.y)<Math.abs(last.x-prev.x))
-               {
-                  last.y=prev.y;
-                  this.parent.setCursor(last);
-                  //this.parent.lockCursor({x:false,y:true});
-               }
-               else
-               {
-                  last.x=prev.x;
-                  this.parent.setCursor(last);
-                  //this.parent.lockCursor({x:true,y:false});
-               }
-               
-               ret=false;
-               break;
-            }
-         }
-      }
-      
-      return ret;
-   }
-   
-   onKeyUp(e_)
-   {
-      var ret=true;
-      
-      switch (e_.key)
-      {
-         case 'Control':
-         {
-            //TODO: lock cursor
-            break;
-         }
-      }
-      
-      return ret;
-   }
-   
-   onMouseMove(e_)
-   {
-      //Move last (free) point
-      if (this.figure&&this.figure.points.length>0)
-      {
-         if (this._isNew)
-         {
-            var rad=this.parent.lengthToWorld(8);
-            var rnbh={lb:{x:this.parent.cursor.x-rad,y:this.parent.cursor.y-rad},rt:{x:this.parent.cursor.x+rad,y:this.parent.cursor.y+rad}}; //Rectangular neighbourhood
-            var nearStart=GU.isPointInNormalRect(this.figure.points[0],rnbh);
-            if (nearStart)
-               this.parent.setCursor(this.figure.points[0]);
-               
-            this.figure.points[this.figure.points.length-1].x=this.parent.cursor.x;
-            this.figure.points[this.figure.points.length-1].y=this.parent.cursor.y;
-            this.updateNthInput(this.figure.points.length-1,this.figure.points[this.figure.points.length-1]);
-         }
-         else if (this._grabbedPoint>=0&&this._grabbedPoint<this.figure.points.length)
-         {
-            this.figure.points[this._grabbedPoint].x=this.parent.cursor.x;
-            this.figure.points[this._grabbedPoint].y=this.parent.cursor.y;
-            this.updateNthInput(this._grabbedPoint,this.figure.points[this._grabbedPoint]);
-            this.parent.repaint();
-         }
-         else
-            this._grabbedPoint=-1;
-      }
-   }
-   
-   onMouseUp(e_)
-   {
-      if (this.figure&&this.figure.points.length>0)
-      {
-         if (!this._isNew)
-         {
-            if (this._grabbedPoint>=0&&this._grabbedPoint<this.figure.points.length)
-            {
-               this.figure.points[this._grabbedPoint].x=this.parent.cursor.x;
-               this.figure.points[this._grabbedPoint].y=this.parent.cursor.y;
-               this.updateNthInput(this._grabbedPoint,this.figure.points[this._grabbedPoint]);
-               this.parent.repaint();
-            }
-            this._grabbedPoint=-1;
-         }
-      }
-   }
-      
    //public methods
    onRepaintOverlay(overlay_)
    {
-      if (this.figure)
+      if (this._figure)
       {
-         this.parent.paintPolyline(overlay_,this.figure.points,{stroke:'#047C00',fill:'',mode:'add'});
+         this.parent.paintPolyline(overlay_,this._figure.points,{stroke:'#047C00',fill:'',mode:'add'});
          
-         if (this.figure.points.length>1)
+         if (this._figure.points.length>1)
          {
             //Paint handlers
-            for (var i in this.figure.points)
+            for (var i in this._figure.points)
             {
-               pt=this.parent.pointToCanvas(this.figure.points[i]);
+               pt=this.parent.pointToCanvas(this._figure.points[i]);
                var handler={x:pt.x-4,y:pt.y-4,w:8,h:8};
                this.parent.paintRect(overlay_,handler,{fill:(i==0 ? 'rgba(201,135,6,1)' : 'rgba(55,184,88,1)')},true);
             }
             
             //Highlight points of self-crosssection
-            var xPts=GU.selfXSections(this.figure.points,false);
+            var xPts=GU.selfXSections(this._figure.points,false);
             for (var pt of xPts)
                this.parent.paintCross(overlay_,pt,{radius:this.parent.lengthToWorld(6),color:'#FF0000'});
             
             //Highlight closing
-            if (GU.ptCmp(this.figure.points[0],this.figure.points[this.figure.points.length-1])&&GU.ptCmp(this.figure.points[this.figure.points.length-1],this.parent.cursor))
+            if (GU.ptCmp(this._figure.points[0],this._figure.points[this._figure.points.length-1])&&GU.ptCmp(this._figure.points[this._figure.points.length-1],this.parent.cursor))
             {
                var radius=this.parent.lengthToWorld(6);
                var rect=GU.moveRect(this.parent.cursor,{x:-radius,y:-radius});
@@ -1695,6 +1001,50 @@ export class PolyLineTool extends FigureTool
       }
    }
    
+   //private methods
+   _pointsFromInputs()
+   {
+      return this._ptsInpList.data;
+   }
+   
+   _paramsFromPoints(points_)
+   {
+      this._ptsInpList.data=points_??[{x:0,y:0}];
+   }
+   
+   _valiatePoints(points_)
+   {
+      let res=false;
+      try
+      {
+         this._preTestPoints(points_,3);
+         
+         if (GU.selfXSections(points_,true).length>0)
+            throw new Error('Polyline has self intersections');
+         
+         res=true;
+      }
+      finally
+      {
+         return res;
+      }
+   }
+}
+
+class PolylinePtsItem extends DynamicFormItem
+{
+   constructor(parent_,params_)
+   {
+      super(parent_,params_);
+      
+      for (let key in this._insidesCollection.inputs)
+      {
+         bindEvtInputToDeferredChange(this._insidesCollection.inputs[key]);
+         this._insidesCollection.inputs[key].addEventListener('change',(e_)=>{this._parent._parent.updateFigureFromInputs();});
+      }
+      this._insidesCollection.btnAdd.addEventListener('click',(e_)=>{this._parent.add({x:0,y:0});});
+      this._insidesCollection.btnDel.addEventListener('click',(e_)=>{this._parent.remove(this);});
+   }
 }
 
 //Memory (internal tool) =====================================================================================

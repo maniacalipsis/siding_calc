@@ -1,5 +1,8 @@
 import {clone} from '/core/js_utils.js';
 
+if (!('structuredClone' in (globalThis??window)))
+   (globalThis??window).structuredClone=clone;
+
 var precision=12;
 var roundFactor=0.000000000001;
 
@@ -422,7 +425,7 @@ export function pointsBoundingBox(points_,isCanvasCoords_)
       }
       
       if (!res)
-         res=clone(figureBox);
+         res=structuredClone(figureBox);
       else
          res=appendBoundingBox(res,figureBox);
    }
@@ -451,7 +454,7 @@ export function isPointInRect(pt_,rect_)
    var res=false;
    
    if (rectType(rect_))
-      res=isPointInNormalRect(pt_,rectNormalize(rectCorners(clone(rect_))));
+      res=isPointInNormalRect(pt_,rectNormalize(rectCorners(structuredClone(rect_))));
    
    return res;
 }
@@ -609,7 +612,7 @@ export function findIntersections(aSides_,bSides_)
          aMidXPts[i].unshift(aSides_[i+offset].lb);
          aMidXPts[i].push(aSides_[i+offset].rt);
          var insertion=pointsToChainedVectors(aMidXPts[i]);
-         //console.log('aMidXPts',clone(aMidXPts),'ins',clone(insertion),'to',i,offset);
+         //console.log('aMidXPts',structuredClone(aMidXPts),'ins',structuredClone(insertion),'to',i,offset);
          aSides_.splice(i+offset,1,insertion[0]);                	//Substitute original vector with fragment
          for (var n=1;n<insertion.length;n++)
          {
@@ -668,12 +671,12 @@ export function intersectPolyLines(aP_,bP_,mode_)
    
    //Convert figures to polylines
    //console.log('intersectPolyLines:',mode_);
-   var aSides=pointsToChainedVectors(clone(aP_),true);
-   var bSides=pointsToChainedVectors(clone(bP_),true);
-   //console.log('before',clone(aSides),clone(bSides));
+   var aSides=pointsToChainedVectors(structuredClone(aP_),true);
+   var bSides=pointsToChainedVectors(structuredClone(bP_),true);
+   //console.log('before',structuredClone(aSides),structuredClone(bSides));
    //Find and intersections
    var intCount=findIntersections(aSides,bSides);
-   //console.log('intersections',clone(aSides),clone(bSides));
+   //console.log('intersections',structuredClone(aSides),structuredClone(bSides));
    
    if (intCount>0)
    {
@@ -700,7 +703,7 @@ export function intersectPolyLines(aP_,bP_,mode_)
             bSides=filterSides(bSides,aP_,true);
          }
       }
-      //console.log('filtered',clone(aSides),clone(bSides));
+      //console.log('filtered',structuredClone(aSides),structuredClone(bSides));
       
       //Concat vectors
       var sides=aSides.concat(bSides);
@@ -710,7 +713,7 @@ export function intersectPolyLines(aP_,bP_,mode_)
          for (var k=i+1;k<sides.length;k++)
             if (ptCmp(sides[i].lb,sides[k].lb)&&ptCmp(sides[i].rt,sides[k].rt)) //remove duplicate
             {
-               //console.log('rm dup',i,clone(sides[i]));
+               //console.log('rm dup',i,structuredClone(sides[i]));
                sides.splice(k,1);
                k--;
             }
@@ -721,7 +724,7 @@ export function intersectPolyLines(aP_,bP_,mode_)
       {
          if (buff.length==0)
             buff.push(sides.shift());
-         //console.log('it',fuse,clone(sides),clone(buff));
+         //console.log('it',fuse,structuredClone(sides),structuredClone(buff));
          
          //2nd pass: concatenate
          for (var i=0;i<sides.length;i++)
@@ -732,7 +735,7 @@ export function intersectPolyLines(aP_,bP_,mode_)
                i--;
                if (ptCmp(buff[buff.length-1].rt,buff[0].lb))
                {
-                  //console.log('push',fuse,clone(sides),clone(buff),clone(res));
+                  //console.log('push',fuse,structuredClone(sides),structuredClone(buff),structuredClone(res));
                   res.push(chainedVectorsToPoints(buff));
                   buff=[];
                   break;
@@ -745,7 +748,7 @@ export function intersectPolyLines(aP_,bP_,mode_)
       
       if (sides.length>0)
       {
-         console.warn('Some sides was not concatenated:',clone(sides),clone(buff));
+         console.warn('Some sides was not concatenated:',structuredClone(sides),structuredClone(buff));
       }
    }
    else

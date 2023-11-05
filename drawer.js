@@ -3,6 +3,9 @@ import * as GU from '/graph_utils.js';
 import {HandPanTool} from '/tools.js';
 import {CalcTool} from '/calc.js';
 
+if (!('structuredClone' in (globalThis??window)))
+   (globalThis??window).structuredClone=clone;
+
 export class Drawer
 {
    constructor(params_)
@@ -139,15 +142,8 @@ export class Drawer
          console.error('No mainBox');
    }
    
-   get cursor()
-   {
-      return {...this._cursor};
-   }
-   set cursor(pos_)
-   {
-      this.setCursor(pos_);
-   }
-   
+   get cursor(){return {...this._cursor};}
+   set cursor(pos_){this.setCursor(pos_);}
    setCursor(pos_,isCanvasCoords_)
    {
       if (isCanvasCoords_)
@@ -221,28 +217,8 @@ export class Drawer
    
    get figures(){return this._figures;}
    set figures(new_figures){this._figures=new_figures;}
-   getFigures()
-   {
-      //Copy list of figures
-      var res=[];
-      
-      for (var figure of this._figures)
-         res.push(figure);
-      
-      return res;
-   }
    
    get selection(){return this._selection;}
-   getSelection()
-   {
-      //Copy current selection list
-      var res=[];
-      
-      for (var figure of this._selection)
-         res.push(figure);
-      
-      return res;;
-   }
    
    get viewportRect()
    {
@@ -785,15 +761,11 @@ export class Drawer
       
       //Paint sizes
       if (this.showSizes)
-      {
          this.paintSizes(this._overlay,(this.showSizes==2 ? this.figures : this.selection));
-      }
       
       //Paint verticle coords
       if (this.showVertCoords)
-      {
          this.paintVertCoords(this._overlay,(this.showVertCoords==3 ? this.figures : (this.showVertCoords==2 ? this.selection : this.figuresAtPoint(this._cursor))));
-      }
       
       //Tool paint overlay
       if (this.activeTool&&this.activeTool.onRepaintOverlay)
@@ -1039,12 +1011,12 @@ export class Drawer
                if (subBox)
                {
                   if (!res)
-                     res=clone(subBox);
+                     res=structuredClone(subBox);
                   else
                      res=GU.appendBoundingBox(res,subBox);
                   
                   if (assignLocal_)
-                     figure.bBox=clone(subBox);
+                     figure.bBox=structuredClone(subBox);
                }
                
                break;
@@ -1057,7 +1029,7 @@ export class Drawer
                   {
                      var subBox=GU.pointsBoundingBox(points);
                      if (!cBox)
-                        cBox=clone(subBox);
+                        cBox=structuredClone(subBox);
                      else
                         cBox=GU.appendBoundingBox(cBox,subBox);
                   }
@@ -1065,12 +1037,12 @@ export class Drawer
                if (cBox)
                {
                   if (!res)
-                     res=clone(cBox);
+                     res=structuredClone(cBox);
                   else
                      res=GU.appendBoundingBox(res,cBox);
                   
                   if (assignLocal_)
-                     figure.bBox=clone(cBox);
+                     figure.bBox=structuredClone(cBox);
                }
                
                break;
@@ -1084,12 +1056,12 @@ export class Drawer
                   rect=GU.rectCorners(rect);
                   
                   if (!res)
-                     res=clone(rect);
+                     res=structuredClone(rect);
                   else
                      res=GU.appendBoundingBox(res,rect);
                   
                   if (assignLocal_)
-                     figure.bBox=clone(rect);
+                     figure.bBox=structuredClone(rect);
                }
             }
          }
@@ -1260,7 +1232,7 @@ export class Drawer
       if (cutLines.length>0)
       {
          cutLines=this.unionPolylines(cutLines);
-         //console.log('Cut: aPs',clone(aPs),'cutLines',clone(cutLines));
+         //console.log('Cut: aPs',structuredClone(aPs),'cutLines',structuredClone(cutLines));
          
          var remained=[];
          var pass=0;
@@ -1290,13 +1262,13 @@ export class Drawer
             aPs.push(rem);
       }
       
-      //console.log('aPs:',clone(aPs));
+      //console.log('aPs:',structuredClone(aPs));
       
       if (aPs.length==1)
-         res={type:'polyline',points:aPs[0],style:clone(aFigures_[0].style)};
+         res={type:'polyline',points:aPs[0],style:structuredClone(aFigures_[0].style)};
       else if (aPs.length>1)
-         res={type:'compound',polyLines:aPs,style:clone(aFigures_[0].style)};
-      //console.log('res:',clone(res));
+         res={type:'compound',polyLines:aPs,style:structuredClone(aFigures_[0].style)};
+      //console.log('res:',structuredClone(res));
       
       return res;
    }
