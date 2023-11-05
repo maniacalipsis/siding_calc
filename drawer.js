@@ -1,7 +1,7 @@
-import {cancelEvent,buildNodes,clone} from '/core/js_utils.js';
-import * as GU from '/graph_utils.js';
-import {HandPanTool} from '/tools.js';
-import {CalcTool} from '/calc.js';
+import {cancelEvent,buildNodes,clone} from './core/js_utils.js';
+import * as GU from './graph_utils.js';
+import {HandPanTool} from './tools.js';
+import {CalcTool} from './calc.js';
 
 if (!('structuredClone' in (globalThis??window)))
    (globalThis??window).structuredClone=clone;

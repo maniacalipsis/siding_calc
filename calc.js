@@ -1,6 +1,6 @@
-import {decorateInputFieldVal,bindEvtInputToDeferredChange,buildNodes,clone,parseCompleteFloat,reqServer} from '/core/js_utils.js';
-import * as GU from '/graph_utils.js';
-import {Tool} from '/tools.js';
+import {decorateInputFieldVal,bindEvtInputToDeferredChange,buildNodes,clone,parseCompleteFloat,reqServer} from './core/js_utils.js';
+import * as GU from './graph_utils.js';
+import {Tool} from './tools.js';
 
 if (!('structuredClone' in (globalThis??window)))
    (globalThis??window).structuredClone=clone;

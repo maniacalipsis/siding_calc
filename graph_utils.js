@@ -1,4 +1,4 @@
-import {clone} from '/core/js_utils.js';
+import {clone} from './core/js_utils.js';
 
 if (!('structuredClone' in (globalThis??window)))
    (globalThis??window).structuredClone=clone;
