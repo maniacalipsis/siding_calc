@@ -139,12 +139,12 @@ function generate_report_text($opts_,$size_,$material_,$panels_,$res_,$contacts_
 
 function email_to_admin()
 {
-   $opts=decode_opts($_REQUEST["opts"]??[]);
-   $contacts=array_map(htmlspecialchars,$_REQUEST["contacts"]??[]);
+   $opts=decode_opts($_REQUEST["opts"]);
+   $contacts=array_map(htmlspecialchars,$_REQUEST["contacts"]);
    $figures_dump="";//htmlspecialchars(json_encode($_REQUEST["figures"],JSON_ENCODE_OPTIONS));
-   $b_box=bounding_box($_REQUEST["figures"]??[],false);
+   $b_box=bounding_box($_REQUEST["figures"],false);
    $size=["w"=>$b_box["rt"]["x"]-$b_box["lb"]["x"],"h"=>$b_box["rt"]["y"]-$b_box["lb"]["y"]];
-   $material=decode_material($_REQUEST["material"]??[]);
+   $material=decode_material($_REQUEST["material"]);
    $calc_results=[
                     "count"=>(int)($_REQUEST["res"]["count"]??0),
                     "total_l"=>(float)($_REQUEST["res"]["total_l"]??0),
@@ -154,9 +154,9 @@ function email_to_admin()
    
    $recipients=ADMIN_EMAIL;
    $subj="Расчет раскладки";
-   $text=generate_report_text($opts,$size,$material,$_REQUEST["res"]["panels"]??[],$calc_results,$contacts,$figures_dump);
+   $text=generate_report_text($opts,$size,$material,$_REQUEST["res"]["panels"],$calc_results,$contacts,$figures_dump);
    $attachments=[["tmp_name"=>__DIR__."/output/".date("Ymd-His-").bin2hex(rnd_bytes(5)).".pdf","name"=>"siding.pdf"]];
-   generate_pdf($opts,$_REQUEST["figures"]??[],$_REQUEST["res"]["scans"]??[],$text,[],[],$attachments[0]["tmp_name"]);
+   generate_pdf($opts,$_REQUEST["figures"],$_REQUEST["res"]["scans"],$text,[],[],$attachments[0]["tmp_name"]);
    
    $res=send_email($recipients,$subj,$text,$attachments,MAIL_SENDER);
    
@@ -168,10 +168,10 @@ function email_to_admin()
 
 function email_to_user()
 {
-   $opts=decode_opts($_REQUEST["opts"]??[]);
-   $b_box=bounding_box($_REQUEST["figures"]??[],false);
+   $opts=decode_opts($_REQUEST["opts"]);
+   $b_box=bounding_box($_REQUEST["figures"],false);
    $size=["w"=>$b_box["rt"]["x"]-$b_box["lb"]["x"],"h"=>$b_box["rt"]["y"]-$b_box["lb"]["y"]];
-   $material=decode_material($_REQUEST["material"]??[]);
+   $material=decode_material($_REQUEST["material"]);
    $calc_results=[
                     "count"=>(int)($_REQUEST["res"]["count"]??0),
                     "total_l"=>(float)($_REQUEST["res"]["total_l"]??0),
@@ -179,11 +179,11 @@ function email_to_user()
                     "waste"=>(float)($_REQUEST["res"]["waste"]??0),
                  ];
    
-   $recipients=trim(explode(",",$_REQUEST["contacts"]["email"]??"")[0]); //Deny to make massive emailing
+   $recipients=trim(explode(",",$_REQUEST["contacts"]["email"])[0]); //Deny to make massive emailing
    $subj="Расчет раскладки";
-   $text=generate_report_text($opts,$size,$material,$_REQUEST["res"]["panels"]??[],$calc_results);
+   $text=generate_report_text($opts,$size,$material,$_REQUEST["res"]["panels"],$calc_results);
    $attachments=[["tmp_name"=>__DIR__."/output/".date("Ymd-His-").bin2hex(rnd_bytes(5)).".pdf","name"=>"siding.pdf"]];
-   generate_pdf($opts,$_REQUEST["figures"]??[],$_REQUEST["res"]["scans"]??[],$text,PDF_PREAMBLE,["text"=>PDF_ADS_TEXT,"image"=>PDF_ADS_IMAGE],$attachments[0]["tmp_name"]);
+   generate_pdf($opts,$_REQUEST["figures"],$_REQUEST["res"]["scans"],$text,PDF_PREAMBLE,["text"=>PDF_ADS_TEXT,"image"=>PDF_ADS_IMAGE],$attachments[0]["tmp_name"]);
    
    $res=send_email($recipients,$subj,$text,$attachments,MAIL_SENDER);
    
@@ -311,7 +311,7 @@ function generate_pdf($opts_,$figures_,$scans_,$text_,$preamble_=[],$ads_=[],$ou
 }
 
 // Main code ================================================================================ //
-if (($_SERVER["HTTP_X_REQUESTED_WITH"]??null)=="JSONHttpRequest")
+if (($_SERVER["HTTP_X_REQUESTED_WITH"])=="JSONHttpRequest")
 {
    try
    {
