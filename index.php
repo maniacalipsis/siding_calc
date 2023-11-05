@@ -146,10 +146,10 @@ function email_to_admin()
    $size=["w"=>$b_box["rt"]["x"]-$b_box["lb"]["x"],"h"=>$b_box["rt"]["y"]-$b_box["lb"]["y"]];
    $material=decode_material($_REQUEST["material"]);
    $calc_results=[
-                    "count"=>(int)($_REQUEST["res"]["count"]??0),
-                    "total_l"=>(float)($_REQUEST["res"]["total_l"]??0),
-                    "total_s"=>(float)($_REQUEST["res"]["total_s"]??0),
-                    "waste"=>(float)($_REQUEST["res"]["waste"]??0),
+                    "count"=>(int)($_REQUEST["res"]["count"]),
+                    "total_l"=>(float)($_REQUEST["res"]["total_l"]),
+                    "total_s"=>(float)($_REQUEST["res"]["total_s"]),
+                    "waste"=>(float)($_REQUEST["res"]["waste"]),
                  ];
    
    $recipients=ADMIN_EMAIL;
@@ -173,10 +173,10 @@ function email_to_user()
    $size=["w"=>$b_box["rt"]["x"]-$b_box["lb"]["x"],"h"=>$b_box["rt"]["y"]-$b_box["lb"]["y"]];
    $material=decode_material($_REQUEST["material"]);
    $calc_results=[
-                    "count"=>(int)($_REQUEST["res"]["count"]??0),
-                    "total_l"=>(float)($_REQUEST["res"]["total_l"]??0),
-                    "total_s"=>(float)($_REQUEST["res"]["total_s"]??0),
-                    "waste"=>(float)($_REQUEST["res"]["waste"]??0),
+                    "count"=>(int)($_REQUEST["res"]["count"]),
+                    "total_l"=>(float)($_REQUEST["res"]["total_l"]),
+                    "total_s"=>(float)($_REQUEST["res"]["total_s"]),
+                    "waste"=>(float)($_REQUEST["res"]["waste"]),
                  ];
    
    $recipients=trim(explode(",",$_REQUEST["contacts"]["email"])[0]); //Deny to make massive emailing
