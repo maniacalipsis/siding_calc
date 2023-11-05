@@ -4,6 +4,8 @@ define("ROOT_DIR",$_SERVER["DOCUMENT_ROOT"].PAGE_ROOT);
 define("JSON_ENCODE_OPTIONS",JSON_HEX_APOS|JSON_HEX_QUOT|JSON_PARTIAL_OUTPUT_ON_ERROR);
 define('FLOAT_PRECISION',2);
 
+error_reporting(0);
+
 require_once(ROOT_DIR."/config.php");
 
 require_once(ROOT_DIR."/core/utils.php");
@@ -11,6 +13,7 @@ require_once(ROOT_DIR."/core/database.php");
 require_once(ROOT_DIR."/tcpdf-config.php");
 require_once(ROOT_DIR."/TCPDF/tcpdf.php");
 require_once(ROOT_DIR."/pdf_drawing.php");
+
 
 function rnd_bytes($len_)
 {
@@ -21,9 +24,9 @@ function rnd_bytes($len_)
    {
       $chrs="0123456789abcdef";
       for ($i=0;$i<$len_;$i++)
-         $res.=$chrs[(int)rand(0,15)];
+         $rec.=$chrs[(int)rand(0,15)];
    }
-   return $res;
+   return $res_;
 }
 
 function calc_store_results($data_,$res_)
@@ -45,10 +48,10 @@ function decode_material($material_)
    $aliases=["mv"=>"Сэндвич панели МВ","pp"=>"Сэндвич панели ПП","ppu"=>"Сэндвич панели ППу","profc25"=>"Профнастил C-2.5","profc10"=>"Профнастил C-10","profhc20"=>"Профнастил HC-20","profhc44"=>"Профнастил HC-44","profh57"=>"Профнастил H-57"];
    
    $res=[
-           "name"=>$aliases[$material_["name"]]??"",
-           "price"=>(float)($material_["price"]??0),
-           "thikness"=>(float)($material_["n"]??0),
-           "max_len"=>(float)($material_["max_len"]??0),
+           "name"=>$aliases[$material_["name"]],
+           "price"=>(float)$material_["price"],
+           "thikness"=>(float)$material_["n"],
+           "max_len"=>(float)$material_["max_len"]
         ];
    return $res;
 }
@@ -74,7 +77,7 @@ function generate_report_text($opts_,$size_,$material_,$panels_,$res_,$contacts_
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
 </HEAD>
 <BODY>
-<?
+<?php
    if ($contacts_)
    {
 ?>
@@ -86,23 +89,23 @@ function generate_report_text($opts_,$size_,$material_,$panels_,$res_,$contacts_
 </TABLE>
 <H3>Запрос</H3>
 <UL>
-<?
+<?php
       foreach ($opts_ as $opt)
       {
 ?>
    <LI><?=$opt?></LI>
 
-<?
+<?php
       }
 ?>
 </UL>
-<?
+<?php
       if ($figures_dump_)
       {
          ?>
 <H4>Фигуры</H4>
 <DIV><?=$figures_dump_?></DIV>
-         <?
+         <?php
       }
    }
 ?>
@@ -122,13 +125,13 @@ function generate_report_text($opts_,$size_,$material_,$panels_,$res_,$contacts_
 <H3>Спецификация</H3>
 <TABLE CELLSPACING="0" CELLPADDING="5">
    <TR><TH BORDER="1">Панель, м</TH><TH BORDER="1">Количество, шт</TH></TR>
-<?
+<?php
    foreach ($panels_ as $panel)
    {
 ?>
    <TR><TD BORDER="1"><?=round((float)$panel["length"],FLOAT_PRECISION)?></TD><TD BORDER="1"><?=(int)$panel["cnt"]?></TD></TR>
 
-<?
+<?php
    }
 ?>
 </TABLE>
@@ -141,23 +144,23 @@ function generate_report_text($opts_,$size_,$material_,$panels_,$res_,$contacts_
 function email_to_admin()
 {
    $opts=decode_opts($_REQUEST["opts"]??[]);
-   $contacts=array_map("htmlspecialchars",$_REQUEST["contacts"]??[]);
+   $contacts=array_map(htmlspecialchars,$_REQUEST["contacts"]??[]);
    $figures_dump="";//htmlspecialchars(json_encode($_REQUEST["figures"],JSON_ENCODE_OPTIONS));
    $b_box=bounding_box($_REQUEST["figures"]??[],false);
    $size=["w"=>$b_box["rt"]["x"]-$b_box["lb"]["x"],"h"=>$b_box["rt"]["y"]-$b_box["lb"]["y"]];
    $material=decode_material($_REQUEST["material"]??[]);
    $calc_results=[
-                    "count"=>(int)$_REQUEST["res"]["count"],
-                    "total_l"=>(float)$_REQUEST["res"]["total_l"],
-                    "total_s"=>(float)$_REQUEST["res"]["total_s"],
-                    "waste"=>(float)$_REQUEST["res"]["waste"],
+                    "count"=>(int)($_REQUEST["res"]["count"]??0),
+                    "total_l"=>(float)($_REQUEST["res"]["total_l"]??0),
+                    "total_s"=>(float)($_REQUEST["res"]["total_s"]??0),
+                    "waste"=>(float)($_REQUEST["res"]["waste"]??0),
                  ];
    
    $recipients=ADMIN_EMAIL;
    $subj="Расчет раскладки";
-   $text=generate_report_text($opts,$size,$material,$_REQUEST["res"]["panels"],$calc_results,$contacts,$figures_dump);
+   $text=generate_report_text($opts,$size,$material,$_REQUEST["res"]["panels"]??[],$calc_results,$contacts,$figures_dump);
    $attachments=[["tmp_name"=>__DIR__."/output/".date("Ymd-His-").bin2hex(rnd_bytes(5)).".pdf","name"=>"siding.pdf"]];
-   generate_pdf($opts,$_REQUEST["figures"],$_REQUEST["res"]["scans"],$text,[],[],$attachments[0]["tmp_name"]);
+   generate_pdf($opts,$_REQUEST["figures"]??[],$_REQUEST["res"]["scans"]??[],$text,[],[],$attachments[0]["tmp_name"]);
    
    $res=send_email($recipients,$subj,$text,$attachments,MAIL_SENDER);
    
@@ -169,22 +172,22 @@ function email_to_admin()
 
 function email_to_user()
 {
-   $opts=decode_opts($_REQUEST["opts"]);
-   $b_box=bounding_box($_REQUEST["figures"],false);
+   $opts=decode_opts($_REQUEST["opts"]??[]);
+   $b_box=bounding_box($_REQUEST["figures"]??[],false);
    $size=["w"=>$b_box["rt"]["x"]-$b_box["lb"]["x"],"h"=>$b_box["rt"]["y"]-$b_box["lb"]["y"]];
-   $material=decode_material($_REQUEST["material"]);
+   $material=decode_material($_REQUEST["material"]??[]);
    $calc_results=[
-                    "count"=>(int)$_REQUEST["res"]["count"],
-                    "total_l"=>(float)$_REQUEST["res"]["total_l"],
-                    "total_s"=>(float)$_REQUEST["res"]["total_s"],
-                    "waste"=>(float)$_REQUEST["res"]["waste"],
+                    "count"=>(int)($_REQUEST["res"]["count"]??0),
+                    "total_l"=>(float)($_REQUEST["res"]["total_l"]??0),
+                    "total_s"=>(float)($_REQUEST["res"]["total_s"]??0),
+                    "waste"=>(float)($_REQUEST["res"]["waste"]??0),
                  ];
    
-   $recipients=trim(explode(",",$_REQUEST["contacts"]["email"])[0]); //Deny to make massive emailing
+   $recipients=trim(explode(",",$_REQUEST["contacts"]["email"]??"")[0]); //Deny to make massive emailing
    $subj="Расчет раскладки";
-   $text=generate_report_text($opts,$size,$material,$_REQUEST["res"]["panels"],$calc_results);
+   $text=generate_report_text($opts,$size,$material,$_REQUEST["res"]["panels"]??[],$calc_results);
    $attachments=[["tmp_name"=>__DIR__."/output/".date("Ymd-His-").bin2hex(rnd_bytes(5)).".pdf","name"=>"siding.pdf"]];
-   generate_pdf($opts,$_REQUEST["figures"],$_REQUEST["res"]["scans"],$text,PDF_PREAMBLE,["text"=>PDF_ADS_TEXT,"image"=>PDF_ADS_IMAGE],$attachments[0]["tmp_name"]);
+   generate_pdf($opts,$_REQUEST["figures"]??[],$_REQUEST["res"]["scans"]??[],$text,PDF_PREAMBLE,["text"=>PDF_ADS_TEXT,"image"=>PDF_ADS_IMAGE],$attachments[0]["tmp_name"]);
    
    $res=send_email($recipients,$subj,$text,$attachments,MAIL_SENDER);
    
@@ -314,27 +317,37 @@ function generate_pdf($opts_,$figures_,$scans_,$text_,$preamble_=[],$ads_=[],$ou
 // Main code ================================================================================ //
 if (($_SERVER["HTTP_X_REQUESTED_WITH"]??null)=="JSONHttpRequest")
 {
-   $ans=["status"=>"fail"];
-   $errors=[];
-   
-   calc_store_results($_REQUEST["data"]??[],$_REQUEST["res"]??[]);
-      
-   if (!email_to_admin())
-      $errors[]="Не удалось отправить запрос менеджеру.";
-   
-   if (!email_to_user())
-      $errors[]="Не удалось отправить письмо с результатами.";
-   
-   if (!$errors)
-      $ans["status"]="success";
-   else
-      $ans["errors"]=$errors;
-   
-   echo json_encode($ans,JSON_ENCODE_OPTIONS);
+   try
+   {
+      $ans=["status"=>"fail"];
+      $errors=[];
+
+      calc_store_results($_REQUEST["data"],$_REQUEST["res"]);
+
+      if (!email_to_admin())
+         $errors[]="Не удалось отправить запрос менеджеру.";
+
+      if (!email_to_user())
+         $errors[]="Не удалось отправить письмо с результатами.";
+
+   }
+   catch (Exception $ex)
+   {
+      $errors[]=$ex->getMessage();
+   }
+   finally
+   {
+      if (!$errors)
+         $ans["status"]="success";
+      else
+         $ans["errors"]=$errors;
+      echo json_encode($ans,JSON_ENCODE_OPTIONS);
+   }
 }
 else
 {
 ?>
+
 <!DOCTYPE HTML>
 <HTML LANG="ru">
 <HEAD>
