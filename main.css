@@ -4,90 +4,90 @@
 {
    font-family:'MuseoSans';
    font-weight:100;
-   src:url('/calculat5/fonts/MuseoSansCyrl-100.otf');
+   src:url('fonts/MuseoSansCyrl-100.otf');
 }
 @font-face
 {
    font-family:'MuseoSans';
    font-weight:100;
    font-style:italic;
-   src:url('/calculat5/fonts/MuseoSansCyrl-100Italic.otf');
+   src:url('fonts/MuseoSansCyrl-100Italic.otf');
 }
 @font-face
 {
    font-family:'MuseoSans';
    font-weight:300;
-   src:url('/calculat5/fonts/MuseoSansCyrl-300.otf');
+   src:url('fonts/MuseoSansCyrl-300.otf');
 }
 @font-face
 {
    font-family:'MuseoSans';
    font-weight:300;
    font-style:italic;
-   src:url('/calculat5/fonts/MuseoSansCyrl-300Italic.otf');
+   src:url('fonts/MuseoSansCyrl-300Italic.otf');
 }
 @font-face
 {
    font-family:'MuseoSans';
    font-weight:500;
-   src:url('/calculat5/fonts/MuseoSansCyrl-700.otf');
+   src:url('fonts/MuseoSansCyrl-700.otf');
 }
 @font-face
 {
    font-family:'MuseoSans';
    font-weight:500;
    font-style:italic;
-   src:url('/calculat5/fonts/MuseoSansCyrl-700Italic.otf');
+   src:url('fonts/MuseoSansCyrl-700Italic.otf');
 }
 @font-face
 {
    font-family:'MuseoSans';
    font-weight:600;
-   src:url('/calculat5/fonts/MuseoSansCyrl-900.otf');
+   src:url('fonts/MuseoSansCyrl-900.otf');
 }
 @font-face
 {
    font-family:'MuseoSans';
    font-weight:600;
    font-style:italic;
-   src:url('/calculat5/fonts/MuseoSansCyrl-900Italic.otf');
+   src:url('fonts/MuseoSansCyrl-900Italic.otf');
 }
 
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6
+.virtus_calc h1,
+.virtus_calc h2,
+.virtus_calc h3,
+.virtus_calc h4,
+.virtus_calc h5,
+.virtus_calc h6
 {
    color:#333333;
 }
-h1,
-h2 
+.virtus_calc h1,
+.virtus_calc h2 
 {
    margin-bottom:0.5em;
 }
-h3,
-h4,
-h5,
-h6 
+.virtus_calc h3,
+.virtus_calc h4,
+.virtus_calc h5,
+.virtus_calc h6 
 {
    margin-bottom:0.8em;
 }
-h1 {font-size:170%; font-weight:600;}
-h2 {font-size:150%; font-weight:600;}
-h3 {font-size:120%; font-weight:500;}
-h4,
-h5,
-h6 {font-size:110%; font-weight:500;}
+.virtus_calc h1 {font-size:170%; font-weight:600;}
+.virtus_calc h2 {font-size:150%; font-weight:600;}
+.virtus_calc h3 {font-size:120%; font-weight:500;}
+.virtus_calc h4,
+.virtus_calc h5,
+.virtus_calc h6 {font-size:110%; font-weight:500;}
 
-p,
-.p,
-ul,
-ol,
-table,
-div.message
+.virtus_calc p,
+.virtus_calc .p,
+.virtus_calc ul,
+.virtus_calc ol,
+.virtus_calc table,
+.virtus_calc div.message
 {
    margin-bottom:1.2em;
 }
@@ -125,12 +125,12 @@ table td
    .virtus_calc h4 {font-size:18px;}
 }
 
-.hidden
+.virtus_calc .hidden
 {
    display:none!important;
 }
-.p,
-div.message
+.virtus_calc .p,
+.virtus_calc div.message
 {
    margin-bottom:1.2em;
 }
@@ -141,11 +141,11 @@ div.message
    padding:0.125em 0.5em;
 }
 
-.message.error
+.virtus_calc .message.error
 {
    color:#D44444;
 }
-.message.success
+.virtus_calc .message.success
 {
    color:#349D51;
 }
@@ -162,15 +162,15 @@ div.message
    border-radius:0.4em;
    background:#FFFFFF;
 }
-select:disabled,
-textarea:disabled,
-input:disabled
+.virtus_calc select:disabled,
+.virtus_calc textarea:disabled,
+.virtus_calc input:disabled
 {
    opacity:0.45;
 }
-select.invalid,
-textarea.invalid,
-input.invalid
+.virtus_calc select.invalid,
+.virtus_calc textarea.invalid,
+.virtus_calc input.invalid
 {
    border-color:#D44444;
 }
@@ -193,7 +193,7 @@ input.invalid
    width:4em; /*to avoid zero-sized inputs*/
 }
 .virtus_calc input[type='number'],
-input[type='text'].number
+.virtus_calc input[type='text'].number
 {
    width:5em;
 }
@@ -205,7 +205,7 @@ input[type='text'].number
    padding-bottom:0;
 }
 
-.button,
+.virtus_calc .button,
 .virtus_calc input[type='button'],
 .virtus_calc input[type='submit']
 {
@@ -217,13 +217,13 @@ input[type='text'].number
    border:none;
    background:url('images/btn-bg.svg') left center/auto 100% repeat-x #2566B6;
 }
-.button.alt,
-input[type='button'].alt,
-input[type='submit'].alt
+.virtus_calc .button.alt,
+.virtus_calc input[type='button'].alt,
+.virtus_calc input[type='submit'].alt
 {
    background-image:url('images/btn-alt-bg.svg');
 }
-input[type='button'].link
+.virtus_calc input[type='button'].link
 {
    display:inline-block;
    color:#175EB6;
@@ -231,39 +231,39 @@ input[type='button'].link
    border:none;
    background:none transparent;
 }
-a.button
+.virtus_calc a.button
 {
    display:inline-block;
    vertical-align:bottom;
 }
-.button:active,
-input[type='button']:active,
-input[type='submit']:active
+.virtus_calc .button:active,
+.virtus_calc input[type='button']:active,
+.virtus_calc input[type='submit']:active
 {
    transform:translateY(1px);
 }
 
-input[type='button'].tool
+.virtus_calc input[type='button'].tool
 {
    margin:0em 0.25em;
    padding:0.5em 0.85em;
 }
-input[type='button'].tool.clr
+.virtus_calc input[type='button'].tool.clr
 {
    padding:0.5em 0.75em;
 }
 
-label.checkbox,
-label.radio
+.virtus_calc label.checkbox,
+.virtus_calc label.radio
 {
    display:inline-block;
    vertical-align:baseline/*bottom*/;
    margin:0.1em 0.25em;
 }
-label.checkbox:not(.right):before,
-label.radio:not(.right):before,
-label.checkbox.right:after,
-label.radio.right:after
+.virtus_calc label.checkbox:not(.right):before,
+.virtus_calc label.radio:not(.right):before,
+.virtus_calc label.checkbox.right:after,
+.virtus_calc label.radio.right:after
 {
    content:'';
    display:inline-block;
@@ -273,44 +273,44 @@ label.radio.right:after
    background:none 0 0/200% 200% no-repeat transparent;
    
 }
-label.checkbox:not(.right):before,
-label.radio:not(.right):before
+.virtus_calc label.checkbox:not(.right):before,
+.virtus_calc label.radio:not(.right):before
 {
    margin-right:0.25em;
 }
-label.checkbox.right:after,
-label.radio.right:after
+.virtus_calc label.checkbox.right:after,
+.virtus_calc label.radio.right:after
 {
    margin-left:0.25em;
 }
-label.checkbox:not(.right):before,
-label.checkbox.right:after
+.virtus_calc label.checkbox:not(.right):before,
+.virtus_calc label.checkbox.right:after
 {
-   background-image:url('/images/checkbox.svg');
+   background-image:url('images/checkbox.svg');
 }
-label.radio:not(.right):before,
-label.radio.right:after
+.virtus_calc label.radio:not(.right):before,
+.virtus_calc label.radio.right:after
 {
-   background-image:url('/images/radio.svg');
+   background-image:url('images/radio.svg');
 }
-label.checkbox.checked:not(.right):before,
-label.radio.checked:not(.right):before,
-label.checkbox.right.checked:after,
-label.radio.right.checked:after
+.virtus_calc label.checkbox.checked:not(.right):before,
+.virtus_calc label.radio.checked:not(.right):before,
+.virtus_calc label.checkbox.right.checked:after,
+.virtus_calc label.radio.right.checked:after
 {
    background-position-y:100%;
 }
-label.checkbox.focused:not(.right):before,
-label.radio.focused:not(.right):before,
-label.checkbox.right.focused:after,
-label.radio.right.focused:after
+.virtus_calc label.checkbox.focused:not(.right):before,
+.virtus_calc label.radio.focused:not(.right):before,
+.virtus_calc label.checkbox.right.focused:after,
+.virtus_calc label.radio.right.focused:after
 {
    background-position-x:100%;
 }
 
 
-label.checkbox>input[type='checkbox'],
-label.radio>input[type='radio']
+.virtus_calc label.checkbox>input[type='checkbox'],
+.virtus_calc label.radio>input[type='radio']
 {
    display:inline-block;
    height:1em;
@@ -320,91 +320,91 @@ label.radio>input[type='radio']
    opacity:0;
 }
 
-input:not([type='button'])+.unit
+.virtus_calc input:not([type='button'])+.unit
 {
    margin:0 0.7em 0 -0.55em;
 }
 
 /* --- Flex styles --- */
-.flex
+.virtus_calc .flex
 {
    display:flex;
    flex-flow:row wrap;
    justify-content:flex-start;
    align-items:flex-start;
 }
-.flex.col
+.virtus_calc .flex.col
 {
    flex-flow:column;
 }
 
-.flex.start 
+.virtus_calc .flex.start 
 {
    justify-content:flex-start;
 }
-.flex.center
+.virtus_calc .flex.center
 {
    justify-content:center;
 }
-.flex.end
+.virtus_calc .flex.end
 {
    justify-content:flex-end;
 }
-.flex.between
+.virtus_calc .flex.between
 {
    justify-content:space-between;
 }
-.flex.around
+.virtus_calc .flex.around
 {
    justify-content:space-around;
 }
-.flex.evenly
+.virtus_calc .flex.evenly
 {
    justify-content:space-evenly;
 }
 
-.flex.x-start 
+.virtus_calc .flex.x-start 
 {
    align-items:flex-start;
 }
-.flex.x-center
+.virtus_calc .flex.x-center
 {
    align-items:center;
 }
-.flex.x-end
+.virtus_calc .flex.x-end
 {
    align-items:flex-end;
 }
-.flex.x-stretch
+.virtus_calc .flex.x-stretch
 {
    align-items:stretch;
 }
 
 /* scroll box */
-.scrollbox.x
+.virtus_calc .scrollbox.x
 {
    width:100%;
    overflow-x:auto;
 }
-.scrollbox.y
+.virtus_calc .scrollbox.y
 {
    overflow-y:auto;
 }
 
 /* ---------- drawer ---------- */
-.drawer
+.virtus_calc .drawer
 {
    flex:1 1 auto;
    /*margin:-1.5em;*/
 }
 
-.drawer .steps_bar
+.virtus_calc .drawer .steps_bar
 {
    flex:1 1 100%;
    margin:0 0 1em 0;
 }
 
-.drawer .main_panel
+.virtus_calc .drawer .main_panel
 {
    flex:5 1 29em;
    margin:1em;
@@ -412,13 +412,13 @@ input:not([type='button'])+.unit
    box-shadow:0 0 45px #C0D4EB;
 }
 
-.drawer .main_panel .paintbox
+.virtus_calc .drawer .main_panel .paintbox
 {
    flex:1 1 auto;
    position:relative;
 }
 
-.drawer .main_panel .paintbox canvas
+.virtus_calc .drawer .main_panel .paintbox canvas
 {
    position:absolute;
    top:0;
@@ -426,12 +426,12 @@ input:not([type='button'])+.unit
    /*cursor:none;*/
 }
 
-.drawer .main_panel .statusbar
+.virtus_calc .drawer .main_panel .statusbar
 {
    display:none;
 }
 
-.drawer>.scrollbox.y
+.virtus_calc .drawer>.scrollbox.y
 {
    flex:0 0 29em;
    align-self:flex-start;
@@ -442,12 +442,12 @@ input:not([type='button'])+.unit
    min-height: 570px;
 }
 
-.drawer .toolbox
+.virtus_calc .drawer .toolbox
 {
    min-height:100%;
 }
 
-.drawer .toolbox .panel
+.virtus_calc .drawer .toolbox .panel
 {
    flex:0 0 auto;
    display:flex;
@@ -456,31 +456,31 @@ input:not([type='button'])+.unit
    align-items:center;
    padding:2em;
 }
-.drawer .toolbox .panel:not(.active)
+.virtus_calc .drawer .toolbox .panel:not(.active)
 {
    display:none;
 }
 
 @media (max-width:480px)
 {
-   .drawer>.scrollbox.y
+   .virtus_calc .drawer>.scrollbox.y
    {
       box-shadow:none;
    }
    
-   .drawer .toolbox .panel
+   .virtus_calc .drawer .toolbox .panel
    {
       padding:0;
    }
 }
 
-.drawer .toolbox .panel h2
+.virtus_calc .drawer .toolbox .panel h2
 {
    padding-left:1.5em;
    background:none left center/1em auto no-repeat transparent;
 }
 
-.drawer .toolbox .panel.active .opts
+.virtus_calc .drawer .toolbox .panel.active .opts
 {
    display:flex;
    flex-flow:column;
@@ -488,46 +488,46 @@ input:not([type='button'])+.unit
    margin-bottom:1em;
 }
 
-.drawer .toolbox .panel.active .opts input[type='number'],
-.drawer .toolbox .panel.active .opts input.number
+.virtus_calc .drawer .toolbox .panel.active .opts input[type='number'],
+.virtus_calc .drawer .toolbox .panel.active .opts input.number
 {
    margin-left:0.7em;
    margin-right:0.7em;
 }
 
-.drawer .hint_bar
+.virtus_calc .drawer .hint_bar
 {
    display:none;  /*disabled*/
    margin-top:2em;
 }
 
-.drawer .hint_bar>div
+.virtus_calc .drawer .hint_bar>div
 {
    margin:0 2em 2em 2em;
    padding:1.5em 0 0 0;
    border-top:1px solid #175EB6;
 }
-.drawer .hint_bar>div:not(.sel)
+.virtus_calc .drawer .hint_bar>div:not(.sel)
 {
    display:none;
 }
 
 /* -------------- steps bar ------------- */
-.steps_bar>div
+.virtus_calc .steps_bar>div
 {
    margin:1em;
 }
-.steps_bar>div:not(.enabled)>span
+.virtus_calc .steps_bar>div:not(.enabled)>span
 {
    color:#757575;
 }
-.steps_bar>div.enabled:not(.sel)>span
+.virtus_calc .steps_bar>div.enabled:not(.sel)>span
 {
    text-decoration:underline;
    cursor:pointer;
 }
 
-.steps_bar>div:not(:last-child)::after
+.virtus_calc .steps_bar>div:not(:last-child)::after
 {
    content:'>';
    display:inline-block;
@@ -535,50 +535,50 @@ input:not([type='button'])+.unit
    color:#C0C0C0;
    transform:scale(0.7,1.5);
 }
-.steps_bar>div.sel>span,
-.steps_bar>div.sel::after
+.virtus_calc .steps_bar>div.sel>span,
+.virtus_calc .steps_bar>div.sel::after
 {
    color:#175EB6;
    font-weight:500;
 }
 
 /* -------------- tools -------------- */
-.drawer .toolbox .panel.cut .figure,
-.drawer .toolbox .panel:not(.cut) .cut,
-.drawer .toolbox .panel:not(.cut) .opts.pos,
-.drawer .toolbox .panel:not(.cut) input[type='button'].add_cut
+.virtus_calc .drawer .toolbox .panel.cut .figure,
+.virtus_calc .drawer .toolbox .panel:not(.cut) .cut,
+.virtus_calc .drawer .toolbox .panel:not(.cut) .opts.pos,
+.virtus_calc .drawer .toolbox .panel:not(.cut) input[type='button'].add_cut
 {
    display:none;
 }
 
-.drawer .toolbox .panel input[type='button'].add_cut
+.virtus_calc .drawer .toolbox .panel input[type='button'].add_cut
 {
    margin-bottom:1em;
    padding-left:3em;
    color:#1A5EB3;
-   background:url('/images/add.svg') left center/contain no-repeat transparent;
+   background:url('images/add.svg') left center/contain no-repeat transparent;
 }
 
 /* Steps */
-.drawer .toolbox .panel.steps:not(.cut) .nav input[type='button'].prev,
-.drawer .toolbox .panel.steps:not(.cut) .nav input[type='button']
+.virtus_calc .drawer .toolbox .panel.steps:not(.cut) .nav input[type='button'].prev,
+.virtus_calc .drawer .toolbox .panel.steps:not(.cut) .nav input[type='button']
 {
    display:none;
 }
-.drawer .toolbox .panel.steps h2.figure {background-image:url('/images/rect.svg');}
-.drawer .toolbox .panel.steps h2.cut {background-image:url('/images/cut.svg');}
+.virtus_calc .drawer .toolbox .panel.steps h2.figure {background-image:url('images/rect.svg');}
+.virtus_calc .drawer .toolbox .panel.steps h2.cut {background-image:url('images/cut.svg');}
 
-.drawer .toolbox .panel.steps .figure_sel
+.virtus_calc .drawer .toolbox .panel.steps .figure_sel
 {
    align-self:stretch;
    margin:0 -0.5em 1em -0.5em;
 }
 @media (max-width:480px)
 {
-   .drawer .toolbox .panel.steps .figure_sel {margin:0;}
+   .virtus_calc .drawer .toolbox .panel.steps .figure_sel {margin:0;}
 }
 
-.drawer .toolbox .panel.steps .figure_sel label
+.virtus_calc .drawer .toolbox .panel.steps .figure_sel label
 {
    flex:0 1 8em;
    display:flex;
@@ -586,7 +586,7 @@ input:not([type='button'])+.unit
    align-items:center;
    margin:0.5em;
 }
-.drawer .toolbox .panel.steps .figure_sel input[type='button']:not(.tool)
+.virtus_calc .drawer .toolbox .panel.steps .figure_sel input[type='button']:not(.tool)
 {
    width:5em;
    height:5em;
@@ -595,23 +595,23 @@ input:not([type='button'])+.unit
    background:none center/60% auto no-repeat #F3F3F3;
    box-shadow:none;
 }
-.drawer .toolbox .panel.steps .figure_sel input[type='button'].rect {background-image:url('/images/rect-sel.svg');}
-.drawer .toolbox .panel.steps .figure_sel input[type='button'].trapezoid {background-image:url('/images/trapezoid-sel.svg');}
-.drawer .toolbox .panel.steps .figure_sel input[type='button'].triangle {background-image:url('/images/triangle-sel.svg');}
-.drawer .toolbox .panel.steps .figure_sel input[type='button'].polyline {background-image:url('/images/line-sel.svg');}
+.virtus_calc .drawer .toolbox .panel.steps .figure_sel input[type='button'].rect {background-image:url('images/rect-sel.svg');}
+.virtus_calc .drawer .toolbox .panel.steps .figure_sel input[type='button'].trapezoid {background-image:url('images/trapezoid-sel.svg');}
+.virtus_calc .drawer .toolbox .panel.steps .figure_sel input[type='button'].triangle {background-image:url('images/triangle-sel.svg');}
+.virtus_calc .drawer .toolbox .panel.steps .figure_sel input[type='button'].polyline {background-image:url('images/line-sel.svg');}
 
-.drawer .toolbox .panel.steps .figure_sel label
+.virtus_calc .drawer .toolbox .panel.steps .figure_sel label
 {
    text-align:center;
 }
 
-.drawer .toolbox .panel.steps .cuts .figure_sel>div
+.virtus_calc .drawer .toolbox .panel.steps .cuts .figure_sel>div
 {
    position:relative;
    margin:0 1.7em 0.5em 0.5em;
 }
 
-.drawer .toolbox .panel.steps .cuts .figure_sel>div>input[type='button'].tool.clr
+.virtus_calc .drawer .toolbox .panel.steps .cuts .figure_sel>div>input[type='button'].tool.clr
 {
    position:absolute;
    top:0;
@@ -619,80 +619,91 @@ input:not([type='button'])+.unit
 }
 
 /* Hand pan */
-.drawer .toolbox .panel.hand_pan input[type='button'].toggle
+.virtus_calc .drawer .toolbox .panel.hand_pan input[type='button'].toggle
 {
-   background-image:url('/images/hand_pan.svg');
+   background-image:url('images/hand_pan.svg');
 }
 
 
 /* Rect and Line */
-.drawer .toolbox .panel.rect h2.figure {background-image:url('/images/rect-size.svg');}
-.drawer .toolbox .panel.rect h2.cut {background-image:url('/images/rect-cut-size.svg');}
+.virtus_calc .drawer .toolbox .panel.rect h2.figure {background-image:url('images/rect-size.svg');}
+.virtus_calc .drawer .toolbox .panel.rect h2.cut {background-image:url('images/rect-cut-size.svg');}
 
-.drawer .toolbox .panel.triangle h2.figure {background-image:url('/images/triangle-size.svg');}
-.drawer .toolbox .panel.triangle h2.cut {background-image:url('/images/triangle-cut-size.svg');}
+.virtus_calc .drawer .toolbox .panel.triangle h2.figure {background-image:url('images/triangle-size.svg');}
+.virtus_calc .drawer .toolbox .panel.triangle h2.cut {background-image:url('images/triangle-cut-size.svg');}
 
-.drawer .toolbox .panel.trapezoid h2.figure {background-image:url('/images/trapezoid-size.svg');}
-.drawer .toolbox .panel.trapezoid h2.cut {background-image:url('/images/trapezoid-cut-size.svg');}
+.virtus_calc .drawer .toolbox .panel.trapezoid h2.figure {background-image:url('images/trapezoid-size.svg');}
+.virtus_calc .drawer .toolbox .panel.trapezoid h2.cut {background-image:url('images/trapezoid-cut-size.svg');}
 
-.drawer .toolbox .panel.line h2.figure {background-image:url('/images/line-size.svg');}
-.drawer .toolbox .panel.line h2.cut {background-image:url('/images/line-cut-size.svg');}
+.virtus_calc .drawer .toolbox .panel.line h2.figure {background-image:url('images/line-size.svg');}
+.virtus_calc .drawer .toolbox .panel.line h2.cut {background-image:url('images/line-cut-size.svg');}
 
-.drawer .toolbox .panel.line .point input[type='number']
+.virtus_calc .drawer .toolbox .panel.line .point input[type='number']
 {
    margin-left:0.25em;
 }
 
+.virtus_calc .drawer .toolbox .panel .size_scheme
+{
+   flex:0 0 10em;
+   align-self:stretch;
+   margin-bottom:1em;
+   background:none center/contain no-repeat transparent;
+}
+.virtus_calc .drawer .toolbox .panel.trapezoid .size_scheme
+{
+   background-image:url('images/trapezoid-size-sceme.svg');
+}
 
 
 /* Calc */
-.drawer .toolbox .panel.calc:not(.layout) .layout,
-.drawer .toolbox .panel.calc:not(.material) .material,
-.drawer .toolbox .panel.calc:not(.result) .result,
-.drawer .toolbox .panel.calc:not(.final) .final,
-.drawer .toolbox .panel.calc:not(.contacts) .contacts,
-.drawer .toolbox .panel.calc:not(.contacts) .nav input.send,
-.drawer .toolbox .panel.calc.contacts .nav input.next,
-.drawer .toolbox .panel.calc.final .nav:not(.final)
+.virtus_calc .drawer .toolbox .panel.calc:not(.layout) .layout,
+.virtus_calc .drawer .toolbox .panel.calc:not(.material) .material,
+.virtus_calc .drawer .toolbox .panel.calc:not(.result) .result,
+.virtus_calc .drawer .toolbox .panel.calc:not(.final) .final,
+.virtus_calc .drawer .toolbox .panel.calc:not(.contacts) .contacts,
+.virtus_calc .drawer .toolbox .panel.calc:not(.contacts) .nav input.send,
+.virtus_calc .drawer .toolbox .panel.calc.contacts .nav input.next,
+.virtus_calc .drawer .toolbox .panel.calc.final .nav:not(.final)
 {
    display:none;
 }
 
-.drawer .toolbox .panel.calc h2.layout {background-image:url('/images/layour.svg');}
-.drawer .toolbox .panel.calc h2.material {background-image:url('/images/material.svg');}
-.drawer .toolbox .panel.calc h2.result {background-image:url('/images/recipe.svg');}
-.drawer .toolbox .panel.calc h2.contacts {background-image:url('/images/contacts.svg');}
-.drawer .toolbox .panel.calc .message.success h2 {background-image:url('/images/mess_ok.svg');}
-.drawer .toolbox .panel.calc .message.error h2 {background-image:url('/images/mess_err.svg');}
+.virtus_calc .drawer .toolbox .panel.calc h2.layout {background-image:url('images/layour.svg');}
+.virtus_calc .drawer .toolbox .panel.calc h2.material {background-image:url('images/material.svg');}
+.virtus_calc .drawer .toolbox .panel.calc h2.result {background-image:url('images/recipe.svg');}
+.virtus_calc .drawer .toolbox .panel.calc h2.contacts {background-image:url('images/contacts.svg');}
+.virtus_calc .drawer .toolbox .panel.calc .message.success h2 {background-image:url('images/mess_ok.svg');}
+.virtus_calc .drawer .toolbox .panel.calc .message.error h2 {background-image:url('images/mess_err.svg');}
 
-.drawer .toolbox .panel.calc .lengths table td.l
+.virtus_calc .drawer .toolbox .panel.calc .lengths table td.l
 {
    text-align:right;
 }
 
-.drawer .toolbox .panel.calc .lengths .scrollbox
+.virtus_calc .drawer .toolbox .panel.calc .lengths .scrollbox
 {
    max-height:40vh;
 }
 
-.drawer .toolbox .panel.calc .lengths .scrollbox table
+.virtus_calc .drawer .toolbox .panel.calc .lengths .scrollbox table
 {
    margin-bottom:0;
 }
 
-.drawer .toolbox .panel.calc .result .group+h3
+.virtus_calc .drawer .toolbox .panel.calc .result .group+h3
 {
    margin-top:1em;
 }
 
-.drawer .toolbox .panel.calc .contacts span.req:after
+.virtus_calc .drawer .toolbox .panel.calc .contacts span.req:after
 {
    content:'*';
    color:#F13536;
    vertical-align:top;
 }
 
-.drawer .toolbox .panel.calc .contacts input[name^='contacts']
+.virtus_calc .drawer .toolbox .panel.calc .contacts input[name^='contacts']
 {
    width:12em;
    margin-left:0.5em;
@@ -700,9 +711,9 @@ input:not([type='button'])+.unit
 
 @media(max-width:991px)
 {
-   .steps_bar {margin:0 1em; flex-wrap:nowrap; overflow-x:scroll;}
-   .steps_bar>*{white-space:nowrap;}
-   .drawer {flex-flow:column;}
-   .drawer>.scrollbox.y {flex:0 1 auto; align-self:normal; min-height:0; max-height:none;}
-   .drawer .main_panel {order:1;}
+   .virtus_calc .steps_bar {margin:0 1em; flex-wrap:nowrap; overflow-x:scroll;}
+   .virtus_calc .steps_bar>*{white-space:nowrap;}
+   .virtus_calc .drawer {flex-flow:column;}
+   .virtus_calc .drawer>.scrollbox.y {flex:0 1 auto; align-self:normal; min-height:0; max-height:none;}
+   .virtus_calc .drawer .main_panel {order:1;}
 }

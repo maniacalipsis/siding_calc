@@ -1,19 +1,15 @@
 <?php
-define("PAGE_ROOT","");
+require_once("./config.php");  //Include environment-specific settings.
+
 define("ROOT_DIR",$_SERVER["DOCUMENT_ROOT"].PAGE_ROOT);
 define("JSON_ENCODE_OPTIONS",JSON_HEX_APOS|JSON_HEX_QUOT|JSON_PARTIAL_OUTPUT_ON_ERROR);
 define('FLOAT_PRECISION',2);
-
-error_reporting(0);
-
-require_once(ROOT_DIR."/config.php");
 
 require_once(ROOT_DIR."/core/utils.php");
 require_once(ROOT_DIR."/core/database.php");
 require_once(ROOT_DIR."/tcpdf-config.php");
 require_once(ROOT_DIR."/TCPDF/tcpdf.php");
 require_once(ROOT_DIR."/pdf_drawing.php");
-
 
 function rnd_bytes($len_)
 {
@@ -346,8 +342,8 @@ if (($_SERVER["HTTP_X_REQUESTED_WITH"]??null)=="JSONHttpRequest")
 }
 else
 {
+   if (SHOW_PAGE_START_END):
 ?>
-
 <!DOCTYPE HTML>
 <HTML LANG="ru">
 <HEAD>
@@ -359,15 +355,16 @@ else
 <META NAME="keywords" CONTENT="[[page_keywords]]">
 <TITLE>SidingCalc</TITLE>
 <LINK REL="icon" HREF="<?=PAGE_ROOT?>/favicon.png" TYPE="image/png">
-<LINK REL="stylesheet" HREF="<?=PAGE_ROOT?>/main.css" TYPE="text/css">
 </HEAD>
 <BODY>
+<?php endif;?>
+   <LINK REL="stylesheet" HREF="<?=PAGE_ROOT?>/main.css" TYPE="text/css">
    <DIV CLASS="virtus_calc">
       <SCRIPT TYPE="module">
-         import {initCheckboxes,initRadios} from '/core/js_utils.js';
-         import * as Tools from '/tools.js';
-         import {CalcTool} from '/calc.js';
-         import {Drawer} from '/drawer.js';
+         import {initCheckboxes,initRadios} from '<?=PAGE_ROOT?>/core/js_utils.js';
+         import * as Tools from '<?=PAGE_ROOT?>/tools.js';
+         import {CalcTool} from '<?=PAGE_ROOT?>/calc.js';
+         import {Drawer} from '<?=PAGE_ROOT?>/drawer.js';
          
          function initDrawer()
          {
@@ -397,8 +394,10 @@ else
          </DIV>
       </DIV>
    </DIV>
+<?php if (SHOW_PAGE_START_END):?>
 </BODY>
 </HTML>
 <?php
+   endif;
 }
 ?>

@@ -821,6 +821,7 @@ export class TrapezoidTool extends APolyLineTool
                     childNodes:[
                                   {tagName:'h2',className:'figure',textContent:'Шаг 2. Размер'},
                                   {tagName:'h2',className:'cut',textContent:'Шаг 4. Размер выреза'},
+                                  {tagName:'div',className:'size_scheme'}, //Node with the BG defined in main.css.
                                   {
                                      tagName:'div',
                                      className:'opts size',
