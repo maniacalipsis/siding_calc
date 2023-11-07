@@ -222,8 +222,7 @@ export class CalcTool extends Tool
                                                         var data={figures:figures,material:{name:this._material,price:this._price,h:this._cutHeight,max_len:this._stripeMaxLength},res:this.calculationData,opts:[],contacts:contacts}; 
                                                         var optInpts=this._toolPanel.querySelectorAll('input[name^=res_opts]');
                                                         for (var inp of optInpts)
-                                                           if (inp.checked)
-                                                              data.opts.push(inp.value);
+                                                           data.opts.push(inp.value);
                                                         
                                                         messBlk.classList.remove('error');
                                                         messBlk.classList.remove('success');
