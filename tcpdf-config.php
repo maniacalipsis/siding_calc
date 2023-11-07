@@ -1,34 +1,27 @@
 <?php
+define("K_TCPDF_EXTERNAL_CONFIG", true);
 
-define ("K_TCPDF_EXTERNAL_CONFIG", true);
-define ("K_PATH_MAIN", $_SERVER["DOCUMENT_ROOT"]."/calculat5/TCPDF/");
-//define ("K_PATH_URL", "");
+define("K_PATH_MAIN",rtrim(ROOT_DIR."/")."/TCPDF/");
+define("K_PATH_IMAGES",rtrim(ROOT_DIR."/")."/.pdf_assets/");   //Not only images but other assets for pdf generation.
+define("K_PATH_FONTS",K_PATH_MAIN."fonts/");
+define("K_PATH_CACHE",sys_get_temp_dir()."/");
 
-define ("K_PATH_FONTS", K_PATH_MAIN."fonts/");
-
-/**
- * Default images directory.
- * By default it is automatically set but you can also set it as a fixed string to improve performances.
- */
-define("K_PATH_IMAGES", __DIR__."/images/");
-define("PDF_HEADER_LOGO", "logo.png");
-define("PDF_HEADER_LOGO_WIDTH", 297);
-
-define("K_PATH_CACHE", sys_get_temp_dir()."/");
-define("K_BLANK_IMAGE", "_blank.png");
-
-
-define("PDF_CREATOR", "TCPDF");
-define("PDF_AUTHOR", "ntkzavod.com.ua");
-define("PDF_HEADER_TITLE", "");
-define("PDF_HEADER_STRING", "");
+define("PDF_CREATOR","TCPDF");
+define("PDF_AUTHOR" ,"ntkzavod.com.ua");
+define("PDF_HEADER_TITLE" ,"");
+define("PDF_HEADER_STRING","");
 
 define("PDF_PAGE_FORMAT", "A4");
 define("PDF_PAGE_ORIENTATION", "L");
+
+define("PDF_HEADER_LOGO","logo.png");
+define("PDF_HEADER_LOGO_WIDTH", 297);
+define("K_BLANK_IMAGE","_blank.png");
+
 define("PDF_INFO_AREA",["x"=>20,"y"=>40,"w"=>250,"h"=>140]);
-define("PDF_PREAMBLE",["path"=>__DIR__."/.ads/preamble.html","x"=>20,"y"=>40,"w"=>250,"h"=>140]);
-define("PDF_ADS_TEXT",["path"=>__DIR__."/.ads/ads.html","x"=>20,"y"=>40,"w"=>160,"h"=>140]);
-define("PDF_ADS_IMAGE",["path"=>__DIR__."/.ads/ads_img.jpg","x"=>185,"y"=>60,"w"=>90,"h"=>61,"dpi"=>150]);
+define("PDF_PREAMBLE" ,["path"=>K_PATH_IMAGES."preamble.html","x"=>20,"y"=>40,"w"=>250,"h"=>140]);
+define("PDF_ADS_TEXT" ,["path"=>K_PATH_IMAGES."ads.html","x"=>20,"y"=>40,"w"=>160,"h"=>140]);
+define("PDF_ADS_IMAGE",["path"=>K_PATH_IMAGES."ads_img.jpg","x"=>185,"y"=>60,"w"=>90,"h"=>61,"dpi"=>150]);
 define("PDF_UNIT", "mm");
 define("PDF_DRAWING_PAGE_FORMAT", "A4");
 define("PDF_DRAWING_PAGE_ORIENTATION", "L");

@@ -1,7 +1,7 @@
 <?php
 //NOTE: Place all settings specific to environment here.
 
-error_reporting(E_ALL);
+error_reporting(E_ERROR);
 define("PAGE_ROOT","");
 define("ROOT_DIR",rtrim($_SERVER["DOCUMENT_ROOT"],"/").PAGE_ROOT);
 
@@ -15,7 +15,7 @@ define("DB_LOGIN","vpromo2_calc3");
 define("DB_PASSWORD","h90Mm(f8@L");
 
 define("SHOW_PAGE_START_END",true);
-define("REMOVE_TMP_PDFS",true);
+define("REMOVE_TMP_PDFS",false);
 
 //Include env-independent part of code:
 require_once(ROOT_DIR."/main.php");

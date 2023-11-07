@@ -17,9 +17,9 @@ function rnd_bytes($len_)
    {
       $chrs="0123456789abcdef";
       for ($i=0;$i<$len_;$i++)
-         $rec.=$chrs[(int)rand(0,15)];
+         $res.=$chrs[(int)rand(0,15)];
    }
-   return $res_;
+   return $res;
 }
 
 function calc_store_results($data_,$res_)
@@ -152,12 +152,12 @@ function email_to_admin()
    $recipients=ADMIN_EMAIL;
    $subj="Расчет раскладки";
    $text=generate_report_text($opts,$size,$material,$_REQUEST["res"]["panels"],$calc_results,$contacts,$figures_dump);
-   $attachments=[["tmp_name"=>__DIR__."/output/".date("Ymd-His-").bin2hex(rnd_bytes(5)).".pdf","name"=>"siding.pdf"]];
+   $attachments=[["tmp_name"=>__DIR__."/output/".date("Ymd-His-1-").bin2hex(rnd_bytes(5)).".pdf","name"=>"siding.pdf"]];
    generate_pdf($opts,$_REQUEST["figures"],$_REQUEST["res"]["scans"],$text,[],[],$attachments[0]["tmp_name"]);
    
    $res=send_email($recipients,$subj,$text,$attachments,MAIL_SENDER);
    
-   if ($res)   //DEBUG condition
+   if (REMOVE_TMP_PDFS)   //DEBUG condition
       unlink($attachments[0]["tmp_name"]);
    
    return $res;
@@ -179,12 +179,12 @@ function email_to_user()
    $recipients=trim(explode(",",$_REQUEST["contacts"]["email"])[0]); //Deny to make massive emailing
    $subj="Расчет раскладки";
    $text=generate_report_text($opts,$size,$material,$_REQUEST["res"]["panels"],$calc_results);
-   $attachments=[["tmp_name"=>__DIR__."/output/".date("Ymd-His-").bin2hex(rnd_bytes(5)).".pdf","name"=>"siding.pdf"]];
+   $attachments=[["tmp_name"=>__DIR__."/output/".date("Ymd-His-0-").bin2hex(rnd_bytes(5)).".pdf","name"=>"siding.pdf"]];
    generate_pdf($opts,$_REQUEST["figures"],$_REQUEST["res"]["scans"],$text,PDF_PREAMBLE,["text"=>PDF_ADS_TEXT,"image"=>PDF_ADS_IMAGE],$attachments[0]["tmp_name"]);
    
    $res=send_email($recipients,$subj,$text,$attachments,MAIL_SENDER);
    
-   if ($res)   //DEBUG condition
+   if (REMOVE_TMP_PDFS)   //DEBUG condition
       unlink($attachments[0]["tmp_name"]);
    
    return $res;
