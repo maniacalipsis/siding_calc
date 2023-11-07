@@ -1052,7 +1052,7 @@ export function decorateInputFieldVal(inpField_,propName_)
       {
          getter=function (){return ((this.value=='')||(this.value==null) ? null : ((this.step??1)==1 ? parseInt(this.value) : parseFloat(this.value)));};   //NOTE: If field value is empty, returns NULL.
          setter=function (newVal_){this.value=((this.step??1)==1 ? parseInt(newVal_??0) : parseFloat(newVal_??0));};
-         inpField_.addEventListener('keypress',(e_)=>{if ((['0','1','2','3','4','5','6','7','8','9','e','-','+','.',','].indexOf(e_.key)<0)&&(!(e_.ctrlKey||e_.altKey))) {e_.key=''; return cancelEvent(e_);}});
+         inpField_.addEventListener('keypress',(e_)=>{if ((['0','1','2','3','4','5','6','7','8','9','e','-','+','.',','].indexOf(e_.key)<0)&&(!(e_.ctrlKey||e_.altKey))) {return cancelEvent(e_);}});
          break;
       }
       case 'checkbox':
@@ -1435,11 +1435,12 @@ export function buildNodes(struct_,collection_)
                }
                case 'style':
                {
-                  if (struct_[prop] instanceof String)
+                  if (typeof struct_[prop] == 'string')  //The "instanceof String" operator has little use here.
                      res.setAttribute([prop],struct_[prop]);
                   else
                      for (var st in struct_[prop])
                         res[prop][st]=struct_[prop][st];
+                  break;
                }
                case 'dataset':
                {
