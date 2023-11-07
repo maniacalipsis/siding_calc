@@ -15,6 +15,7 @@ define("DB_LOGIN","vpromo2_calc3");
 define("DB_PASSWORD","h90Mm(f8@L");
 
 define("SHOW_PAGE_START_END",false);
+define("REMOVE_TMP_PDFS",true);
 
 //Include env-independent part of code:
 require_once(ROOT_DIR."/main.php");
