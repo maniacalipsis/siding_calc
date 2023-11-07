@@ -1,9 +1,9 @@
 <?php
 //NOTE: Place all settings specific to environment here.
 
-error_reporting(0);
+error_reporting(E_ALL);
 define("PAGE_ROOT","");
-define("ROOT_DIR",$_SERVER["DOCUMENT_ROOT"].PAGE_ROOT);
+define("ROOT_DIR",rtrim($_SERVER["DOCUMENT_ROOT"],"/").PAGE_ROOT);
 
 define("SERVER_HOST","ntkzavod.com.ua");
 define("MAIL_SENDER","info@".SERVER_HOST);
@@ -15,6 +15,7 @@ define("DB_LOGIN","vpromo2_calc3");
 define("DB_PASSWORD","h90Mm(f8@L");
 
 define("SHOW_PAGE_START_END",true);
+define("REMOVE_TMP_PDFS",true);
 
 //Include env-independent part of code:
 require_once(ROOT_DIR."/main.php");

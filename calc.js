@@ -170,7 +170,7 @@ export class CalcTool extends Tool
       //this.inputs.cutHeight=this._toolPanel.querySelector('.panel.calc input[name=\'cut_height\']');
       //this.inputs.maxLength=this._toolPanel.querySelector('.panel.calc input[name=\'max_len\']');
       this.contactInputs=this._toolPanel.querySelectorAll('input[name^=contacts]');
-      this.inputs.mat=this._toolPanel.querySelectorAll('.panel.calc input[name=\'material\']');
+      this.inputs.mat=this._toolPanel.querySelector('.panel.calc select[name=\'material\']');
       this.btnPrev=this._toolPanel.querySelector('.panel.calc input[type=button].prev');
       this.btnNext=this._toolPanel.querySelector('.panel.calc input[type=button].next');
       this.btnSend=this._toolPanel.querySelector('.panel.calc input[type=button].send');
@@ -182,8 +182,7 @@ export class CalcTool extends Tool
       //this.inputs.cutHeight.addEventListener('input',(e_)=>{var val=parseCompleteFloat(e_.target.value); if (!isNaN(val)&&val>0.01){this.cutHeight=val; this.calcFilling();}});
       //this.inputs.maxLength.addEventListener('input',(e_)=>{var val=parseCompleteFloat(e_.target.value); if (!isNaN(val)&&val>0.01){this.stripeMaxLength=val; this.calcFilling();}});
       
-      for (var radio of this.inputs.mat)
-         radio.addEventListener('click',(e_)=>{this.material=e_.target.value; e_.target.blur();});
+      this.inputs.mat.addEventListener('change',(e_)=>{this.material=e_.target.value; e_.target.blur();});
       
       for (var inp of this.contactInputs)
          inp.addEventListener('input',(e_)=>{e_.target.classList.toggle('invalid',e_.target.value=='');});
@@ -377,17 +376,10 @@ export class CalcTool extends Tool
       {
          let mat=val_.split(',');
          this._material=mat[0];
-         this._price=mat[1];
-         this.cutHeight=mat[2];
-         this.stripeMaxLength=mat[3];
-         
-         this._parent.getToolByName('memory')?.memorize('siding_calc_material',val_);
-         
-         //Set inputs:
-         mat[1]='[0-9.]+'; //Replace price with wildcard.
-         let regexp=RegExp('^'+mat.join(',')+'$','i');
-         for (let radio of this.inputs.mat)
-            radio.checked=regexp.test(radio.value);
+         this._matThickness=mat[1];
+         this._price=mat[2];
+         this.cutHeight=mat[3];
+         this.stripeMaxLength=mat[4];
       }
    }
    
