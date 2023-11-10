@@ -10,43 +10,6 @@ export class Drawer
 {
    constructor(params_)
    {
-      //private props
-      this._mainBox=null;   //Main container
-      this._paintBox=null;  //Container of canvases
-      this._statusBar={};   //Cells for displaying status
-      this._overlay=null;   //Tools overlay canvas
-      this._canvas=null;    //Main drawing canvas
-      this._underlay=null;  //Grid,etc canvas
-      
-      this._zoomLevel=0.05;
-      this._origin={x:100,y:100};    //Offset of the wrold origin on the canvas (px)
-      this._tools=[];                //Toolset
-      this._activeTool=null;         //Pointer to active tool
-      this._panTool=null;            //Dynamic pointer to pan tool
-      this._cursor={x:0,y:0};        //Cursor real world position
-      this._panStart=null;           //Start point of panning
-      
-      this._figures=[];     //Array of drawed figures
-      this._selection=[];   //Array of selected figures
-      
-      //public props
-      this.style={stroke:'#1A5EB3',fill:'#C8D3E6'};                                 //Drawing style (current FG and BG colors)
-      this.crosshairStyle={radius:-1,color:'rgba(56,80,125,1)'};                    //Crosshair style
-      this.gridStyle={radius:3,minSpacing:10,factor:10,color:'rgba(0,0,0,0.15)'};   //Grid style
-      this.axesStyle={radius:-1,color:'rgba(200,211,248,1)',textColor:'rgba(100,141,196,1)'};                       //Axes style
-      this.background='#FFFFFF';                                                    //Background
-      this.zoomStep=2;        //Step of zoom
-      this.gridSize=0.1;      //Grid size in meters
-      this.snap=true;         //Snap cursor to grid
-      this.showGrid=true;     //Grid visibility.
-      this.showAxes=true;     //Axes visibility.
-      this.showNormals=false; //Show normals of polyline segments
-      this.showSizes=1;       //Show sizes of: 1 - selected figures, 2 - all figures
-      this.showVertCoords=1;  //Show coordinates of figure verticles: 1 - figure under cursor, 2 - selected figures, 3 - all figures
-      this.precision=3;       //Precision of displaying values
-      this.ppm=81/25.4*1000;  //Scaling factor (px per meter)
-      this.unitsFactor=1;     //Native units is a meters. unitsFactor allows to display values in mm, cm, km etc.
-      
       //initialization
       if (params_.mainBox)
       {
@@ -142,6 +105,24 @@ export class Drawer
          console.error('No mainBox');
    }
    
+   //public props
+   style={stroke:'#1A5EB3',fill:'#C8D3E6'};                                 //Drawing style (current FG and BG colors)
+   crosshairStyle={radius:-1,color:'rgba(56,80,125,1)'};                    //Crosshair style
+   gridStyle={radius:3,minSpacing:10,factor:10,color:'rgba(0,0,0,0.15)'};   //Grid style
+   axesStyle={radius:-1,color:'rgba(200,211,248,1)',textColor:'rgba(100,141,196,1)'};                       //Axes style
+   background='#FFFFFF';                                                    //Background
+   zoomStep=2;        //Step of zoom
+   gridSize=0.1;      //Grid size in meters
+   snap=true;         //Snap cursor to grid
+   showGrid=true;     //Grid visibility.
+   showAxes=true;     //Axes visibility.
+   showNormals=false; //Show normals of polyline segments
+   showSizes=1;       //Show sizes of: 1 - selected figures, 2 - all figures
+   showVertCoords=1;  //Show coordinates of figure verticles: 1 - figure under cursor, 2 - selected figures, 3 - all figures
+   precision=3;       //Precision of displaying values
+   ppm=81/25.4*1000;  //Scaling factor (px per meter)
+   unitsFactor=1;     //Native units is a meters. unitsFactor allows to display values in mm, cm, km etc.
+   
    get cursor(){return {...this._cursor};}
    set cursor(pos_){this.setCursor(pos_);}
    setCursor(pos_,isCanvasCoords_)
@@ -215,10 +196,18 @@ export class Drawer
       }
    }
    
-   get figures(){return this._figures;}
-   set figures(new_figures){this._figures=new_figures;}
+   get figuresIt(){return this._figures.values();}
+   get figuresEnt(){return this._figures.entries();}
+   get figuresLength(){return this._figures.length;}
    
-   get selection(){return this._selection;}
+   get selectionIt(){return this._selection.values();}
+   get selectionEnt(){return this._selection.entries();}
+   get selectionLength(){return this._selection.length;}
+   
+   get compoundFigure()
+   {
+      return this._compoundFigureCache??=(this._figures.length>0 ? this.intersectFigures(this._figures.filter((fig_)=>fig_.mode=='add'),this._figures.filter((fig_)=>fig_.mode=='cut'),'diff') : null);
+   }
    
    get viewportRect()
    {
@@ -229,6 +218,26 @@ export class Drawer
    {
       return this.rectToWorld(this.viewportRect);   //Get rect of wisible part of the world
    }
+   
+   //private props
+   _mainBox=null;    //Main container
+   _paintBox=null;   //Container of canvases
+   _statusBar={};    //Cells for displaying status
+   _overlay=null;    //Tools overlay canvas
+   _canvas=null;     //Main drawing canvas
+   _underlay=null;   //Grid,etc canvas
+   
+   _zoomLevel=0.05;
+   _origin={x:100,y:100};     //Offset of the wrold origin on the canvas (px)
+   _tools=[];                 //Toolset
+   _activeTool=null;          //Pointer to active tool
+   _panTool=null;             //Dynamic pointer to pan tool
+   _cursor={x:0,y:0};         //Cursor real world position
+   _panStart=null;            //Start point of panning
+   
+   _figures=[];               //Array of source figures
+   _selection=[];             //Array of selected figures
+   _compoundFigureCache=null; //A cahce of a compound figure, made from the source one.
    
    //private methods
    resize(size_)
@@ -493,7 +502,7 @@ export class Drawer
    
    paintVertCoords(canvas_,figures_)
    {
-      figures_=(figures_ instanceof Array ? figures_ : (figures_ ? [figures_] : []));
+      figures_=((figures_ instanceof Array)||(figures_[Symbol.iterator]) ? figures_ : (figures_ ? [figures_] : []));
       if (figures_.length>0)
       {
          var context=canvas_.getContext('2d');
@@ -564,7 +573,7 @@ export class Drawer
    
    paintSizes(canvas_,figures_)
    {
-      figures_=(figures_ instanceof Array ? figures_ : (figures_ ? [figures_] : []));
+      figures_=((figures_ instanceof Array)||(figures_[Symbol.iterator]) ? figures_ : (figures_ ? [figures_] : []));
       
       //Collect bounding boxes
       var boxes=[];
@@ -761,11 +770,11 @@ export class Drawer
       
       //Paint sizes
       if (this.showSizes)
-         this.paintSizes(this._overlay,(this.showSizes==2 ? this.figures : this.selection));
+         this.paintSizes(this._overlay,(this.showSizes==2 ? this.figuresIt : this.selectionIt));
       
       //Paint verticle coords
       if (this.showVertCoords)
-         this.paintVertCoords(this._overlay,(this.showVertCoords==3 ? this.figures : (this.showVertCoords==2 ? this.selection : this.figuresAtPoint(this._cursor))));
+         this.paintVertCoords(this._overlay,(this.showVertCoords==3 ? this.figuresIt : (this.showVertCoords==2 ? this.selectionIt : this.figuresAtPoint(this._cursor))));
       
       //Tool paint overlay
       if (this.activeTool&&this.activeTool.onRepaintOverlay)
@@ -781,28 +790,25 @@ export class Drawer
       var context=this._canvas.getContext('2d');
       context.clearRect(0,0,this._canvas.width,this._canvas.height);
       
-      for (var figure of this.figures)
+      switch (this.compoundFigure?.type)
       {
-         switch (figure.type)
+         case 'rect':
          {
-            case 'rect':
-            {
-               this.paintRect(this._canvas,figure.rect,figure.style);
-               break;
-            }
-            case 'polyline':
-            {
-               this.paintPolyline(this._canvas,figure.points,figure.style);
-               break;
-            }
-            case 'compound':
-            {
-               context.save();
-               for (var points of figure.polyLines)
-                  this.paintPolyline(this._canvas,points,figure.style);
-               context.restore();
-               break;
-            }
+            this.paintRect(this._canvas,this.compoundFigure.rect,this.compoundFigure.style);
+            break;
+         }
+         case 'polyline':
+         {
+            this.paintPolyline(this._canvas,this.compoundFigure.points,this.compoundFigure.style);
+            break;
+         }
+         case 'compound':
+         {
+            context.save();
+            for (var points of this.compoundFigure.polyLines)
+               this.paintPolyline(this._canvas,points,this.compoundFigure.style);
+            context.restore();
+            break;
          }
       }
    }
@@ -936,47 +942,91 @@ export class Drawer
       }
    }
    
-   addFigure(figure_)
+   list()
    {
-      if (figure_)
-      {
-         this._figures.push(figure_);
-         this.repaint();
-      }
+      //Returns a copy of figures array.
+      
+      return Array.from(this._figures);
    }
    
-   removeFigures(figures_)
+   at(index_)
    {
-      //Remove figures
-      figures_=(figures_ instanceof Array ? figures_ : (figures_ ? [figures_] : []));
-      for (var figure of figures_)
-      {
-         var indx=this._figures.indexOf(figure);
-         if (indx>-1)
-         {
-            this.deselect(figure);
-            this._figures.splice(indx,1);
-         }
-      }
+      //Returns figure by index.
       
+      return this._figures[index_];
+   }
+   
+   indexOf(fig_)
+   {
+      //Returns index of a figure.
+      
+      return this._figures.indexOf(fig_);
+   }
+   
+   filter(/*Array.filter() args*/)
+   {
+      return this._figures.filter(...arguments);
+   }
+   
+   map(/*Array.map() args*/)
+   {
+      return this._figures.map(...arguments);
+   }
+   
+   flatMap(/*Array.flatMap() args*/)
+   {
+      return this._figures.flatMap(...arguments);
+   }
+   
+   reduce(/*Array.reduce() args*/)
+   {
+      return this._figures.reduce(...arguments);
+   }
+   
+   some(/*Array.some() args*/)
+   {
+      return this._figures.some(...arguments);
+   }
+   
+   append(...figs_)
+   {
+      //Appends figures.
+      
+      this._figures.push(...figs_);
+      
+      this._compoundFigureCache=null;
       this.repaint();
    }
    
-   removeAll()
+   splice(startIndex_,deleteCount_,...figs_)
    {
-      //Remove figure
-      this._figures=[];
-      this._selection=[];
-
-      this.repaintCanvas();
+      //Replaces figures.
+      
+      let removed=this._figures.splice(startIndex_,deleteCount_,...figs_);
+      for (let fig of removed)
+         this.deselect(fig);
+      
+      this._compoundFigureCache=null;
+      this.repaint();
+      
+      return removed;
    }
    
+   clear()
+   {
+      //Removes all figures.
+      
+      this._figures=[];
+      this._selection=[];
+      this._compoundFigureCache=null;
+      this.repaint();
+   }
    
    reorderFigures(figures_,shift_)
    {
       //Raise/lower figures
       
-      figures_=(figures_ instanceof Array ? figures_ : (figures_ ? [figures_] : []));
+      figures_=((figures_ instanceof Array)||(figures_[Symbol.iterator]) ? figures_ : (figures_ ? [figures_] : []));
       if (figures_.length>0&&shift_!=0)
       {
          for (var figure of figures_)
@@ -988,6 +1038,7 @@ export class Drawer
                this._figures.splice(indx+shift_,0,figure);
             }
          }
+         this._compoundFigureCache=null;
          this.repaint();
       }
    }
@@ -999,7 +1050,7 @@ export class Drawer
       var res=null;
       //console.log('boundingBox: figures_',figures_);
       
-      var figArr=(figures_ instanceof Array ? figures_ : [figures_]);
+      var figArr=((figures_ instanceof Array)||(figures_[Symbol.iterator]) ? figures_ : [figures_]);
       //console.log('figArr',figArr);
       
       for (var figure of figArr)
@@ -1071,8 +1122,8 @@ export class Drawer
    
    moveFigures(figures_,delta_)
    {
-      figures_=(figures_ instanceof Array ? figures_ : (figures_ ? [figures_] : []));
-      if ((figures_.length>0)&&(delta_.x!=0||delta_.y!=0))
+      figures_=((figures_ instanceof Array)||(figures_[Symbol.iterator]) ? figures_ : (figures_ ? [figures_] : []));
+      if ((delta_.x!=0||delta_.y!=0))
       {
          for (var figure of figures_)
             switch (figure.type)
@@ -1096,7 +1147,7 @@ export class Drawer
                         points[i]=GU.moveRect(points[i],delta_);
                }
             }
-         
+         this._compoundFigureCache=null;
          this.repaint();
       }
    }
@@ -1295,7 +1346,7 @@ export class Drawer
    {
       //Remove figures from selection
       
-      figures_ =(figures_ instanceof Array ? figures_ : [figures_ ]);
+      figures_ =((figures_ instanceof Array)||(figures_[Symbol.iterator]) ? figures_ : [figures_ ]);
       
       for (var figure of figures_)
       {
@@ -1327,6 +1378,11 @@ export class Drawer
       }
       
       this.repaintOverlay();
+   }
+   
+   selectionAt(indx_)
+   {
+      return this._selection[indx_];
    }
    
    selectAll()

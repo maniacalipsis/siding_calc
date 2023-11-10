@@ -46,18 +46,8 @@ export class StepsTool extends Tool
    constructor(parent_)
    {
       super(parent_);
-      
-      //private props
-      this._step=0;
-      this._farestStep=0;
-      this._maxSteps=7;
-      this._figureType='';
-      
-      this._figuresSwap=null;
-      this._selectedCut=null;
-      
-      //Init steps selector
-      this._stepSelectors=[];
+
+      //Init steps selector:
       var stpStructs=[
                         {tagName:'div',className:'step sel enabled',childNodes:[{tagName:'span',textContent:'1. Фигура'}],dataset:{step:0}},
                         {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'2. Размер'}],dataset:{step:1}},
@@ -116,13 +106,14 @@ export class StepsTool extends Tool
       this._cutsContainer=this._cutsPanel.querySelector('.figure_sel');
    }
    
-   onReady()
-   {
-      //Recall figures:
-      this._restoreState();
-      if (this._parent.figures.length>0)
-         this.step=3; //Skip to the siding layout.
-   }
+   //private props
+   _step=0;
+   _farestStep=0;
+   _maxSteps=7;
+   _figureType='';
+   
+   _stepSelectors=[];
+   _selectedCut=null;
    
    //public props
    get name(){return 'steps';}
@@ -140,9 +131,9 @@ export class StepsTool extends Tool
    get step(){return this._step;}
    set step(val_)
    {
-      //TODO: Replace this trash with a finite state machine.
-      
       //Set step
+      let oldStep=this._step;
+      
       if ((0<=val_)&&(val_<=this._maxSteps))
          this._step=val_;
       
@@ -150,7 +141,7 @@ export class StepsTool extends Tool
          this._farestStep=this._step;
       
       //Force step to very start if there is no figures was drawed
-      if ((this._step>1)&&(this.parent.figures.length==0)&&(!this._figureType))
+      if ((this._step>1)&&(this.parent.figuresLength==0)&&(!this._figureType))
          return (this._step=0);  //ALERT: EMERGENCY RETURN IS HERE !!!!!!!!!!!!!!!!
       
       //Update direct step selectors
@@ -158,27 +149,6 @@ export class StepsTool extends Tool
       {
          this._stepSelectors[i].classList.toggle('sel',i==this._step);
          this._stepSelectors[i].classList.toggle('enabled',i<=this._farestStep);
-      }
-      
-      //Toggle between resulting compound figure and separate source figures
-      if (this._step<4)
-      {
-         if (this._figuresSwap)  //Restore source figures
-         {
-            this.parent.removeAll();
-            for (var figure of this._figuresSwap)
-               this.parent.addFigure(figure);
-            
-            this._figuresSwap=null;
-         }
-      }
-      else  //Remember source figures, then make a compound one from them
-      {
-         this._figuresSwap=this.parent.figures;
-         
-         var compound=this.parent.intersectFigures(this.parent.figures[0],this.parent.figures.slice(1),'diff');
-         this.parent.removeAll();
-         this.parent.addFigure(compound);
       }
       
       this._repaintCutsList();
@@ -189,12 +159,12 @@ export class StepsTool extends Tool
          case 0:
          {
             //Choose main figure type:
-            if (this.parent.figures.length>0)
+            if (this.parent.figuresLength>0)
             {
                if (confirm('Начать сначала?\n(Все фигуры будут удалены)'))
                {
                   //Reset:
-                  this.parent.removeAll();
+                  this.parent.clear();
                   this._toolPanel.classList.remove('cut');
                   this.parent.activeTool=this;
                   this._figureType='';
@@ -211,19 +181,18 @@ export class StepsTool extends Tool
          {
             //Create/setup main figure:
             let tool=null;
-            if (this.parent.figures.length==0)
+            if (this.parent.figuresLength==0)
             {
                this.parent.style.fill='#C8D3E6';
                tool=this.parent.getToolByName(this._figureType);
             }
             else
-               tool=this.parent.getToolByName(this.parent.figures[0].type);
+               tool=this.parent.getToolByName(this.parent.at(0).type);
             
             if (tool)
             {
                this.parent.activeTool=tool;
-               tool.toolPanel.classList.remove('cut');
-               tool.bindToFigure(this.parent.figures[0]);
+               tool.bindToFigure(this.parent.at(0));
             }
             
             this._saveState();
@@ -232,7 +201,7 @@ export class StepsTool extends Tool
          }
          case 2:
          {
-            //Choose hole figure type:
+            //Choose cut figure type:
             this._toolPanel.classList.add('cut');
             this.parent.activeTool=this;
             this._figureType='';
@@ -243,25 +212,26 @@ export class StepsTool extends Tool
          }
          case 3:
          {
-            //Add/setup holes:
-            var selection=this.parent.selection;
-            if ((this._figureType=='')&&(selection.length==0))
-               this.step++;
+            //Add/setup cuts:
+            if ((this._figureType=='')&&(this.parent.selectionLength==0))
+               this.step+=(oldStep>this.step ? -1 : +1);
             else
             {
-               
                var tool=null;
-               if (selection.length>0)
-                  this.parent.getToolByName(selection[0].type).bindToFigure(selection[0]);
+               if (this.parent.selectionLength>0)
+               {
+                  tool=this.parent.getToolByName(this.parent.selectionAt(0).tool);
+                  tool.bindToFigure(this.parent.selectionAt(0));
+                  this.parent.deselectAll();
+               }
                else
                   tool=this.parent.getToolByName(this._figureType);
                
-               this.parent.deselectAll();
                this.parent.style.fill='#FFFFFF';
                if (tool)
                {
-                  tool._toolPanel.classList.add('cut');
                   this.parent.activeTool=tool;
+                  tool.mode='cut';
                }
             }
             
@@ -270,7 +240,7 @@ export class StepsTool extends Tool
          }
          case 4:
          {
-            //Setup hole:
+            //Setup layout:
             var tool=this.parent.getToolByName('calc');
             if (tool)
             {
@@ -279,7 +249,7 @@ export class StepsTool extends Tool
                
                if (this._step<this._farestStep)
                {
-                  this.parent.fitToViewport(this.parent.figures);
+                  this.parent.fitToViewport(this.parent.figuresIt);
                   tool.calcFilling();
                }
             }
@@ -298,7 +268,7 @@ export class StepsTool extends Tool
                
                if (this._step<this._farestStep)
                {
-                  this.parent.fitToViewport(this.parent.figures);
+                  this.parent.fitToViewport(this.parent.figuresIt);
                   tool.calcFilling();
                }
             }
@@ -313,7 +283,7 @@ export class StepsTool extends Tool
                tool.activeView='result';
                this.parent.activeTool=tool;
                
-               this.parent.fitToViewport(this.parent.figures);
+               this.parent.fitToViewport(this.parent.figuresIt);
                tool.calcFilling();
             }
             break;
@@ -334,6 +304,15 @@ export class StepsTool extends Tool
       }
    }
    
+   //public methods
+   onReady()
+   {
+      //Recall figures:
+      this._restoreState();
+      if (this.parent.figuresLength>0)
+         this.step=0;
+   }
+   
    prev()
    {
       //Helper method for null-chained call.
@@ -346,26 +325,24 @@ export class StepsTool extends Tool
       this.step++;
    }
    
-   //public methods
-   
    //private methods
    _repaintCutsList()
    {
-      var figures=this.parent.figures;
-      if ((figures.length>1)&&this._cutsPanel&&this._cutsContainer)
+      if (this._cutsPanel&&this._cutsContainer)
       {
          this._cutsContainer.innerHTML='';
-         for (var i=1;i<figures.length;i++)
-         {
-            let struct={
-                          tagName:'div',
-                          childNodes:[
-                                        {tagName:'input',type:'button',className:figures[i].type,value:'',dataset:{indx:i},onclick:(e_)=>{this.parent.select(this.parent.figures[parseInt(e_.target.dataset.indx)]);}},
-                                        {tagName:'input',type:'button',className:'tool clr',value:'✕',title:'Удалить',dataset:{indx:i},onclick:(e_)=>{this.parent.removeFigures(this.parent.figures[parseInt(e_.target.dataset.indx)]); this._repaintCutsList();}}
-                                     ]
-                       };
-            this._cutsContainer.appendChild(buildNodes(struct));
-         }
+         for (let [i,figure] of this.parent.figuresEnt)
+            if (figure.mode=='cut')
+            {
+               let struct={
+                             tagName:'div',
+                             childNodes:[
+                                           {tagName:'input',type:'button',className:figure.type,value:'',dataset:{indx:i},onclick:(e_)=>{this.parent.select(this.parent.at(parseInt(e_.target.dataset.indx)));}},
+                                           {tagName:'input',type:'button',className:'tool clr',value:'✕',title:'Удалить',dataset:{indx:i},onclick:(e_)=>{this.parent.splice(parseInt(e_.target.dataset.indx),1); this._repaintCutsList();}}
+                                        ],
+                          };
+               this._cutsContainer.appendChild(buildNodes(struct));
+            }
          
          this._cutsPanel.classList.remove('hidden');
       }
@@ -376,15 +353,14 @@ export class StepsTool extends Tool
    _saveState()
    {
       let mem=this._parent.getToolByName('memory');
-      mem?.memorize('siding_calc_figures',this._parent.figures);
-      mem?.memorize('siding_calc_swap',this._figuresSwap);
+      mem?.memorize('siding_calc_figures',this._parent.list());
    }
    
    _restoreState()
    {
       let mem=this._parent.getToolByName('memory');
-      this._parent.figures=mem?.recall('siding_calc_figures')??[];
-      this._figuresSwap=mem?.recall('siding_calc_swap')??null;
+      this._parent.clear();
+      this._parent.append(...(mem?.recall('siding_calc_figures')??[]));
    }
 }
 
@@ -456,18 +432,30 @@ export class FigureTool extends Tool
    get active(){return super.active;}
    set active(val_)
    {
-      if (val_)
-         this.bindToFigure(this.parent.selection[0]);  //Take a figure from selection.
-      else
-         this.bindToFigure(null);   //Unbind.
-      
+      //if (val_)
+      //   this.bindToFigure(this.parent.selectionAt(0));  //Take a figure from selection.
+      //else
+      //   this.bindToFigure(null);   //Unbind.
+      //
       super.active=val_;
+   }
+   
+   get mode(){return this._mode;}
+   set mode(newVal_)
+   {
+      if (['add','cut'].indexOf(newVal_)>-1)
+      {
+         this._mode=newVal_;
+         this.toolPanel.classList.toggle('cut',this._mode=='cut');
+      }
+      else
+         console.error('Invalid value of FigureTool.mode assigned',newVal_);
    }
    
    //private props
    _type='';
+   _mode='add';
    _figure=null;
-   _isNew=true;
    _UIElements={};   //Collection for easy access to the UI elements of the tool.
    
    //public methods
@@ -475,15 +463,14 @@ export class FigureTool extends Tool
    {
       //Binds/unbinds tool to the given figure.
       
-      if (figure_?.type==this._type)
+      if (figure_?.tool==this.name)
       {
          this._figure=figure_;
-         this._isNew=false;
+         this.mode=this._figure.mode;
       }
       else
       {
          this._figure=null;
-         this._isNew=true;
       }
    }
    
@@ -492,15 +479,20 @@ export class FigureTool extends Tool
       //A shorthand for this.bindToFigure(null).
       
       this._figure=null;
-      this._isNew=true;
    }
    
    submitFigure()
    {
       //Submits the editing figure to the parent.
       
-      if (this._figure&&this._isNew)
-         this.parent.addFigure(this._figure);
+      if (this._figure)
+      {
+         let indx=this.parent.indexOf(this._figure);
+         if (indx>-1)
+            this.parent.splice(indx,1,this._figure);
+         else
+            this.parent.append(this._figure);
+      }
       this.unbind();
    }
    
@@ -525,6 +517,13 @@ export class FigureTool extends Tool
    {
       for (var key in data_)
          this._UIElements.inputs[key].valueAsMixed=data_[key].toFixed(Math.ceil(-Math.log10(this._UIElements.inputs[key].step)));
+   }
+   
+   _makeFigure(figData_)
+   {
+      //Helper method, fills common props of a figure.
+      
+      return {type:this._type,tool:this.name,mode:this.mode,...figData_};
    }
 }
 
@@ -591,10 +590,10 @@ export class RectTool extends FigureTool
       if (this._testRect(rect))
       {
          rect=GU.rectNormalize(rect);
-         this._figure??={type:this._type,rect:null,style:{...this.parent.style}};
+         this._figure??=this._makeFigure({rect:null,style:{...this.parent.style}});
          this._figure.rect=rect;
          
-         this.parent.fitToViewport(this.parent.figures.length ? this.parent.figures : this._figure);
+         this.parent.fitToViewport(this.parent.figuresLength ? this.parent.figuresIt : this._figure);
       }
    }
    
@@ -602,7 +601,7 @@ export class RectTool extends FigureTool
    {
       if (this._figure)
       {
-         if (this._isNew)
+         if (this.parent.indexOf(this._figure)<0)
          {
             this.parent.paintRect(overlay_,GU.rectNormalize(structuredClone(this._figure.rect)),this._figure.style);
          }
@@ -660,10 +659,10 @@ class APolyLineTool extends FigureTool
       let points=this._pointsFromInputs();
       if (this._valiatePoints(points))
       {
-         this._figure??={type:this._type,points:null,style:{...this.parent.style}};
+         this._figure??=this._makeFigure({points:null,style:{...this.parent.style}});
          this._figure.points=points;
          
-         this.parent.fitToViewport(this.parent.figures.length ? this.parent.figures : this._figure);
+         this.parent.fitToViewport(this.parent.figuresLength ? this.parent.figuresIt : this._figure);
       }
    }
    
@@ -671,7 +670,7 @@ class APolyLineTool extends FigureTool
    {
       if (this._figure)
       {
-         if (this._isNew)
+         if (this.parent.indexOf(this._figure)<0)
             this.parent.paintPolyline(overlay_,this._figure.points,this._figure.style);
       }
    }
