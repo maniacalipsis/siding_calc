@@ -290,10 +290,7 @@ export class CalcTool extends Tool
       }
    }
    
-   get cutAxis()
-   {
-      return this._cutAxis;
-   }
+   get cutAxis(){return this._cutAxis;}
    set cutAxis(val_)
    {
       this._cutAxis=(val_=='y' ? 'y' : 'x');
@@ -308,10 +305,7 @@ export class CalcTool extends Tool
       this._parent.getToolByName('memory')?.memorize('siding_calc_axis',this._cutAxis);
    }
    
-   get cutOffset()
-   {
-      return this._cutOffset;
-   }
+   get cutOffset(){return this._cutOffset;}
    set cutOffset(val_)
    {
       this._cutOffset=val_;
@@ -321,10 +315,7 @@ export class CalcTool extends Tool
       this._parent.getToolByName('memory')?.memorize('siding_calc_offset',this._cutOffset);
    }
    
-   get stripeMaxLength()
-   {
-      return this._stripeMaxLength;
-   }
+   get stripeMaxLength(){return this._stripeMaxLength;}
    set stripeMaxLength(val_)
    {
       this._stripeMaxLength=Math.max(val_,0.01);
@@ -334,10 +325,7 @@ export class CalcTool extends Tool
       //this._parent.getToolByName('memory')?.memorize('siding_calc_max_len',this._stripeMaxLength);
    }
    
-   get cutHeight()
-   {
-      return this._cutHeight;
-   }
+   get cutHeight(){return this._cutHeight;}
    set cutHeight(val_)
    {
       this._cutHeight=Math.max(val_,0.01);
@@ -355,10 +343,7 @@ export class CalcTool extends Tool
       //this._parent.getToolByName('memory')?.memorize('siding_calc_cut_height',this._cutHeight);
    }
    
-   get crossbarStep()
-   {
-      return this._crossbarStep;
-   }
+   get crossbarStep(){return this._crossbarStep;}
    set crossbarStep(val_)
    {
       this._crossbarStep=Math.max(val_,0.01);
@@ -483,7 +468,7 @@ export class CalcTool extends Tool
       this.visuals={bBox:null,scans:[]};
       
       //Prepare and cleanup:
-      var figures=structuredClone(this.parent.figures);
+      var figures=[structuredClone(this.parent.compoundFigure)];
       
       //Start calculations
       var lengths=[];
