@@ -211,7 +211,7 @@ export class CalcTool extends Tool
                                                      
                                                      if (errCnt==0)
                                                      {
-                                                        var figures=this.parent.figures;
+                                                        let figures=(this.parent.compoundFigure ? [structuredClone(this.parent.compoundFigure)] : []);
                                                         for (var figure of figures)
                                                            if (figure.type=='compound')
                                                            {
@@ -468,7 +468,7 @@ export class CalcTool extends Tool
       this.visuals={bBox:null,scans:[]};
       
       //Prepare and cleanup:
-      var figures=[structuredClone(this.parent.compoundFigure)];
+      let figures=(this.parent.compoundFigure ? [structuredClone(this.parent.compoundFigure)] : []);
       
       //Start calculations
       var lengths=[];

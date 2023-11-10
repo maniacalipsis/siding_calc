@@ -132,6 +132,8 @@ export class StepsTool extends Tool
    set step(val_)
    {
       //Set step
+      let oldStep=this._step;
+      
       if ((0<=val_)&&(val_<=this._maxSteps))
          this._step=val_;
       
@@ -212,7 +214,7 @@ export class StepsTool extends Tool
          {
             //Add/setup cuts:
             if ((this._figureType=='')&&(this.parent.selectionLength==0))
-               this.step++;
+               this.step+=(oldStep>this.step ? -1 : +1);
             else
             {
                var tool=null;
