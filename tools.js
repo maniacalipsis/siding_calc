@@ -173,7 +173,10 @@ export class StepsTool extends Tool
                   this.step++;   //Skip this step.
             }
             else
-            {/*At this point this._figureType is expect to b set by one of the buttons.*/}
+            {
+               this.parent.activeTool=this;
+               /*At this point this._figureType is expected to be set by one of the buttons.*/
+            }
             
             break;
          }
