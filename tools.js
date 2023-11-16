@@ -96,7 +96,7 @@ export class StepsTool extends Tool
                                                    {tagName:'div',className:'figure_sel flex'}
                                                 ]
                                   },
-                                  {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад',onclick:(e_)=>{this.step--;}},{tagName:'input',type:'button',value:'Далее',onclick:(e_)=>{this.step++;}}]}
+                                  {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад',onclick:(e_)=>{this.step--;}},{tagName:'input',type:'button',className:'next',value:'Далее',onclick:(e_)=>{this.step++;}}]}
                                ]
                  };
       this._toolPanel=buildNodes(struct);

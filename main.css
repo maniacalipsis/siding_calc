@@ -551,15 +551,35 @@ table td
    display:none;
 }
 
+.virtus_calc .drawer .toolbox .panel .nav
+{
+   display:grid;
+   grid-template-areas:'add_cut add_cut' 'prev next';
+   gap:1em 0.5em;
+}
+
+.virtus_calc .drawer .toolbox .panel .nav input[type='button'].add_cut
+{
+   grid-area:add_cut;
+}
+.virtus_calc .drawer .toolbox .panel .nav input[type='button'].prev
+{
+   grid-area:prev;
+}
+.virtus_calc .drawer .toolbox .panel .nav input[type='button'].next
+{
+   grid-area:next;
+}
+
 .virtus_calc .drawer .toolbox .panel input[type='button'].add_cut
 {
-   margin-bottom:1em;
    padding-left:3em;
    color:#1A5EB3;
    background:url('images/add.svg') left center/contain no-repeat transparent;
 }
 
 /* Steps */
+
 .virtus_calc .drawer .toolbox .panel.steps:not(.cut) .nav input[type='button'].prev,
 .virtus_calc .drawer .toolbox .panel.steps:not(.cut) .nav input[type='button']
 {
