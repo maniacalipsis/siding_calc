@@ -150,9 +150,9 @@ export class CalcTool extends Tool
                                                       tagName:'div',
                                                       className:'contact opts',
                                                       childNodes:[
-                                                                    {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'Ваше имя'},{tagName:'input',type:'text',name:'contacts[name]',dataset:{required:1},value:''}]},
-                                                                    {tagName:'label',className:'phone',childNodes:[{tagName:'span',textContent:'Телефон'},{tagName:'input',type:'text',name:'contacts[phone]',dataset:{required:0},value:''}]},
-                                                                    {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'E-mail'},{tagName:'input',type:'text',name:'contacts[email]',dataset:{required:1},value:''}]}
+                                                                    {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'Ваше имя'},{tagName:'input',type:'text',name:'contacts[name]',required:true,value:''}]},
+                                                                    {tagName:'label',className:'phone',childNodes:[{tagName:'span',className:'req',textContent:'Телефон'},{tagName:'input',type:'text',name:'contacts[phone]',required:true,pattern:'^\\+?[0-9]{10}$',value:''}]},
+                                                                    {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'E-mail'},{tagName:'input',type:'text',name:'contacts[email]',required:true,pattern:'^[a-z0-9\\._%\\+\\-]+@[a-z0-9\\.\\-]+\\.[a-z]{2,4}$',value:''}]}
                                                                  ]
                                                    },
                                                    {tagName:'div',className:'message p hidden'},
@@ -192,25 +192,20 @@ export class CalcTool extends Tool
       this.btnSend.addEventListener('click',(e_)=>{
                                                      //Validate contacts
                                                      var messBlk=this._toolPanel.querySelector('.message');
-                                                     var errCnt=0;
-                                                     var contacts={name:'',phone:'',email:''};
-                                                     for (var inp of this.contactInputs)
+                                                     try
                                                      {
-                                                        contacts[/\[([a-z]+)\]/i.exec(inp.name)[1]]=inp.value;
-                                                        var invalid=(inp.value=='');
-                                                        inp.classList.toggle('invalid',invalid);
-                                                        if (invalid)
-                                                           errCnt++;
-                                                     }
-                                                     //Memorize contacts (forms completion doesn't works for them):
-                                                     let param={};
-                                                     for (var inp of this.contactInputs)
-                                                         param[inp.name]=inp.value;
-                                                     this._parent.getToolByName('memory')?.memorize('siding_calc_user_contacts',param);
-                                                     
-                                                     
-                                                     if (errCnt==0)
-                                                     {
+                                                        var contacts={name:'',phone:'',email:''};
+                                                        for (var inp of this.contactInputs)
+                                                           if (!inp.reportValidity())
+                                                              throw new Error('Пожалуйста, заполните все наобходимые поля.');
+                                                        
+                                                        //Memorize contacts (forms completion doesn't works for them):
+                                                        let param={};
+                                                        for (var inp of this.contactInputs)
+                                                            param[inp.name]=inp.value;
+                                                        this._parent.getToolByName('memory')?.memorize('siding_calc_user_contacts',param);
+                                                        
+                                                        
                                                         let figures=(this.parent.compoundFigure ? [structuredClone(this.parent.compoundFigure)] : []);
                                                         for (var figure of figures)
                                                            if (figure.type=='compound')
@@ -227,16 +222,17 @@ export class CalcTool extends Tool
                                                         messBlk.classList.remove('error');
                                                         messBlk.classList.remove('success');
                                                         messBlk.classList.add('hidden');
+                                                        
                                                         reqServer(null,data)
                                                            .then((ans_)=>{if (messBlk){var ok=ans_.status=='success'; messBlk.classList.remove('hidden'); messBlk.classList.toggle('error',!ok); messBlk.classList.toggle('success',ok); messBlk.innerHTML=(ok ? 'На указанный адрес отправлено письмо с результатами расчета.' : '<b>Ошибка:</b><br>'+ans_.errors.join('<br>'));}})
                                                            .catch((xhr_)=>{if (messBlk){messBlk.classList.remove('hidden'); messBlk.classList.remove('success'); messBlk.classList.add('error'); messBlk.textContent='Не удалось отправить данные.';}});
                                                      }
-                                                     else
+                                                     catch (err)
                                                      {
                                                         messBlk.classList.remove('hidden');
                                                         messBlk.classList.remove('success');
                                                         messBlk.classList.add('error');
-                                                        messBlk.innerHTML='Пожалуйста, заполните все наобходимые поля.';
+                                                        messBlk.innerHTML=err.message;
                                                      }
                                                   });
    }
