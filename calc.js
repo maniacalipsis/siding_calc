@@ -33,7 +33,30 @@ export class CalcTool extends Tool
       //public props
       this.precision=1000;
       
-      //Create tool panel
+      //Create tool panel:
+      let materials=[
+                       //Material height and max_len are measured in meters.
+                       {group:'mv' ,name:'Сэндвич панели МВ' ,key:'mv'      ,thickness:0.050,price:100,height:1.000,max_len:14},
+                       {group:'pp' ,name:'Сэндвич панели ПП' ,key:'pp'      ,thickness:0.050,price:101,height:1.000,max_len:14},
+                       {group:'ppu',name:'Сэндвич панели ППу',key:'ppu'     ,thickness:0.050,price:102,height:1.160,max_len:14},
+                       {group:'cs' ,name:'Профнастил C-2.5'  ,key:'profc25' ,thickness:0.5  ,price:103,height:1.200,max_len:14},
+                       {group:'cs' ,name:'Профнастил C-10'   ,key:'profc10' ,thickness:0.5  ,price:104,height:1.145,max_len:14},
+                       {group:'cs' ,name:'Профнастил НС-20'  ,key:'profhc20',thickness:0.5  ,price:105,height:1.080,max_len:14},
+                       {group:'cs' ,name:'Профнастил НС-44'  ,key:'profhc44',thickness:0.5  ,price:106,height:1.010,max_len:14},
+                       {group:'cs' ,name:'Профнастил Н-57'   ,key:'profh57' ,thickness:0.5  ,price:107,height:0.950,max_len:14},
+                    ];
+      let materialOptions=[];
+      let matGrp=materials[0]?.group??null;
+      for (let mat of materials)
+      {
+         materialOptions.push({tagName:'option',textContent:mat.name,value:mat.key+','+mat.thickness+','+mat.price+','+mat.height+','+mat.max_len});
+         if (mat.group!=matGrp)
+         {
+            materialOptions.push({tagName:'option',disabled:true,textContent:'---------------'});
+            matGrp=mat.group;
+         }
+      }
+      
       var struct={
                     tagName:'div',
                     className:'panel calc',
@@ -70,23 +93,7 @@ export class CalcTool extends Tool
                                      tagName:'select',
                                      name:'material',
                                      className:'opts material',
-                                     childNodes:[
-                                                   {tagName:'option',textContent:'Сэндвич панели МВ',value:'mv,0.050,100,1.000,14'},
-                                     
-                                                   {tagName:'option',disabled:true,textContent:'---------------'},
-                                                   {tagName:'option',textContent:'Сэндвич панели ПП',value:'pp,0.050,101,1.000,14'},
-                                         
-                                                   {tagName:'option',disabled:true,textContent:'---------------'},
-                                                   {tagName:'option',textContent:'Сэндвич панели ППу',value:'ppu,0.050,102,1.000,14'},
-                                                
-												   {tagName:'option',disabled:true,textContent:'---------------'},
-                                                   {tagName:'option',textContent:'Профнастил C-2.5',value:'profc25,0.5,103,1.200,14'},
-                                                   {tagName:'option',textContent:'Профнастил C-10',value:'profc10,0.5,104,1.145,14'},
-												   {tagName:'option',textContent:'Профнастил НС-20',value:'profhc20,0.5,105,1.080,14'},
-												   {tagName:'option',textContent:'Профнастил НС-44',value:'profhc44,0.5,106,1.010,14'},
-												   {tagName:'option',textContent:'Профнастил Н-57',value:'profh57,0.5,107,0.950,14'}
-                                                   
-                                                ]
+                                     childNodes:materialOptions,
                                   },
                                   {tagName:'h2',className:'result',textContent:'Шаг 7. Результат'},
                                   {
