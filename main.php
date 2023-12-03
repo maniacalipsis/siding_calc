@@ -22,6 +22,12 @@ function rnd_bytes($len_)
    return $res;
 }
 
+function is_ssl()
+{
+   return (strtolower($_SERVER['HTTPS'] ? $_SERVER['HTTPS'] : $_SERVER['HTTP_HTTPS'])=='on')||                          //The HTTP_HTTPS may appear instead of HTTPS
+          (($_SERVER['HTTP_X_FORWARDED_PORT'] ? $_SERVER['HTTP_X_FORWARDED_PORT'] : $_SERVER['SERVER_PORT'])=='443');   //The HTTP_X_FORWARDED_PORT may be set to 443 whereas the SERVER_PORT remains 80.
+}
+
 function calc_store_results($data_,$res_)
 {
    if ($data_&&$res_)
@@ -34,6 +40,51 @@ function calc_store_results($data_,$res_)
          
          perform_queries($queries);
       }
+}
+
+function store_data()
+{
+   $fname=null;
+   
+   $data=array_intersect_key($_REQUEST,["figures"=>null,"material"=>null,"cutAxis"=>null,"cutOffset"=>null,"crossbars"=>null]);   //Filter requested data. NOTE: Keep keys in sync with /tools.js\StepsTool._collectData().
+   if ($data)
+   {
+      
+      $data_str=json_encode($data,JSON_ENCODE_OPTIONS);
+      $fname=hash("sha256",date("YmdHiS").rnd_bytes(32));
+      
+      if (!file_exists(STORAGE_DIR))
+      {
+         if (!mkdir(STORAGE_DIR,0750,true))
+            throw new Exception("Не удалось сохранить данные, ошибка №1");
+      }
+      elseif (!is_dir(STORAGE_DIR))
+         throw new Exception("Не удалось сохранить данные, ошибка №2");
+         
+      
+      if (file_put_contents(rtrim(STORAGE_DIR,"/")."/$fname.json",$data_str)===false)
+         throw new Exception("Не удалось сохранить данные, ошибка №3");
+   }
+   
+   return $fname;
+}
+
+function recall_data($fname_)
+{
+   $data=null;
+   
+   $fname_=preg_replace("/[^0-9a-f]/","",$fname_);   //Sanitize requested file name.
+   if (!$fname_)
+      throw new Exception("Некорректная ссылка.");
+   
+   $fpath=rtrim(STORAGE_DIR,"/")."/$fname_.json";
+   if (!file_exists($fpath))
+      throw new Exception("Запрошенные данные не найдены. Срок хранения истёк или ссылка неверна.");
+   
+   $data_str=file_get_contents($fpath);
+   $data=json_decode($data_str,true,64,JSON_THROW_ON_ERROR);
+   
+   return $data;
 }
 
 function decode_material($material_)
@@ -53,7 +104,7 @@ function decode_opts($opts_)
 {
    $res=[];
    
-   $aliases=["spec"=>"Спецификация","drawing"=>"Чертеж раскладки","optimize"=>"Оптимизация раскладки","price"=>"Расчет стоимости"];
+   $aliases=["spec"=>"Спецификация","drawing"=>"Чертеж раскладки","optimize"=>"Оптимизация раскладки","price"=>"Расчет стоимости","link"=>"Ссылка на проект"];
    foreach ($opts_ as $opt)
       $res[$opt]=$aliases[$opt];
    
@@ -109,6 +160,25 @@ function generate_report_text($opts_,$size_,$material_,$panels_,$res_,$contacts_
    <TR><TH BORDER="1">Высота, м</TH><TD BORDER="1"><?=round($size_["h"],FLOAT_PRECISION)?></TD></TR>
    <TR><TH BORDER="1">Материал</TH><TD BORDER="1"><?=$material_["name"]?>, <?=$material_["thikness"]?></TD></TR>
 </TABLE>
+<?php 
+if ($opts_["link"])
+{
+   try
+   {
+      $fname=store_data();  //NOTE: throws exception on errors.
+      $url=(is_ssl() ? "https://" : "http://").SERVER_HOST."?f=$fname";
+      ?>
+      <P>Ссылка на проект: <A HREF="<?=$url?>"><?=$url?></A></P>
+      <?php
+   }
+   catch (Exception $ex)
+   {
+      ?>
+      <P STYLE="color:#BC220A;">Не удалось создать ссылку на проект: <?=$ex->getMessage()?></P>
+      <?php
+   }
+}
+?>
 <H3>Результаты рассчета</H3>
 <TABLE CELLSPACING="0" CELLPADDING="5">
    <TR><TH BORDER="1">Количество, шт</TH><TD BORDER="1"><?=$res_["count"]?></TD></TR>
@@ -315,14 +385,35 @@ if (($_SERVER["HTTP_X_REQUESTED_WITH"])=="JSONHttpRequest")
       $ans=["status"=>"fail"];
       $errors=[];
 
-      calc_store_results($_REQUEST["data"],$_REQUEST["res"]);
+      switch ($_REQUEST["action"])
+      {
+         case "request":   //Send request to manager:
+         {  
+            //calc_store_results($_REQUEST["data"],$_REQUEST["res"]);   //TODO: Differs from /calc.js request.
 
-      if (!email_to_admin())
-         $errors[]="Не удалось отправить запрос менеджеру.";
+            if (!email_to_admin())
+               $errors[]="Не удалось отправить запрос менеджеру.";
 
-      if (!email_to_user())
-         $errors[]="Не удалось отправить письмо с результатами.";
-
+            if (!email_to_user())
+               $errors[]="Не удалось отправить письмо с результатами.";
+            
+            break;
+         }
+         case "get_link":  //Store project data and return a link:
+         {
+            $fname=store_data();  //NOTE: throws exception on errors.
+            $ans["status"]="success";
+            $ans["link"]=(is_ssl() ? "https://" : "http://").SERVER_HOST."?f=$fname";
+            
+            break;
+         }
+         case "recall_data":
+         {
+            $data=recall_data($_REQUEST["f"]);  //NOTE: throws exception on errors.
+            $ans["status"]="success";
+            $ans+=$data;
+         }
+      }
    }
    catch (Exception $ex)
    {

@@ -14,6 +14,7 @@ export class CalcTool extends Tool
       super(parent_);
       
       //private props
+      this._panelNodes={};
       this.visuals=null;
       this.inputs={};
       this.contactInputs=[];
@@ -134,6 +135,13 @@ export class CalcTool extends Tool
                                                                     {tagName:'span',className:'unit',innerHTML:' м<sup>2</sup>'},
                                                                  ]
                                                    },
+                                                   {
+                                                      tagName:'div',
+                                                      className:'save_local group',
+                                                      childNodes:[
+                                                                    {tagName:'a',href:'',download:'siding_calc_data.json',textContent:'Сохранить данные проекта',_collectAs:'lnkSaveLocal'},
+                                                                 ]
+                                                   },
                                                 ]
                                   },
                                   {tagName:'h2',className:'contacts',textContent:'Шаг 8. Получить результат'},
@@ -148,7 +156,8 @@ export class CalcTool extends Tool
                                                                     {tagName:'input',type:'hidden',name:'res_opts[]',value:'spec'},
                                                                     {tagName:'input',type:'hidden',name:'res_opts[]',value:'drawing'},
                                                                     {tagName:'input',type:'hidden',name:'res_opts[]',value:'optimize'},
-                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Расчет стоимости'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'price',className:'req_price'}]}
+                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Расчет стоимости'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'price',className:'req_price'}]},
+                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Ccылку на проект'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'link',className:'req_link'}]},
                                                                  ]
                                                    },
                                                    {tagName:'h3',textContent:'Контактные данные'},
@@ -169,7 +178,7 @@ export class CalcTool extends Tool
                                   {tagName:'div',className:'nav final',childNodes:[{tagName:'input',type:'button',className:'final_prev',value:'Начать сначала'}]}
                                ]
                  };
-      this._toolPanel=buildNodes(struct);
+      this._toolPanel=buildNodes(struct,this._panelNodes);
       
       this.inputs.dir=this._toolPanel.querySelectorAll('.panel.calc input[name=\'direction\']');
       this.inputs.crossbarStep=this._toolPanel.querySelector('.panel.calc input[name=\'step\']');
@@ -221,7 +230,17 @@ export class CalcTool extends Tool
                                                               for (var points of figure.polyLines)
                                                                  figure.style.modes.push(GU.isNormalsOutside(points) ? 'add' : 'cut');
                                                            }
-                                                        var data={figures:figures,material:{name:this._material,price:this._price,h:this._cutHeight,max_len:this._stripeMaxLength},res:this.calculationData,opts:[],contacts:contacts}; 
+                                                        var data={
+                                                                    action:'request',
+                                                                    figures:figures,
+                                                                    material:{name:this._material,price:this._price,h:this._cutHeight,max_len:this._stripeMaxLength},
+                                                                    cutAxis:this.cutAxis,
+                                                                    cutOffset:this.cutOffset,
+                                                                    crossbars:this.crossbars,
+                                                                    res:this.calculationData,
+                                                                    opts:[],
+                                                                    contacts:contacts,
+                                                                 }; 
                                                         var optInpts=this._toolPanel.querySelectorAll('input[name^=res_opts]');
                                                         for (var inp of optInpts)
                                                            data.opts.push(inp.value);
@@ -249,18 +268,18 @@ export class CalcTool extends Tool
       //Load params
       let param;
       
-      param=this._parent.getToolByName('memory')?.recall('siding_calc_axis');
-      this.cutAxis=(param=='y' ? param : 'x');
+      //param=this._parent.getToolByName('memory')?.recall('siding_calc_axis');
+      //this.cutAxis=(param=='y' ? param : 'x');
       
       param=parseFloat(this._parent.getToolByName('memory')?.recall('siding_calc_offset'));
       if (!isNaN(param))
          this.cutOffset=param;
       
-      param=parseFloat(this._parent.getToolByName('memory')?.recall('siding_calc_cut_height'));
+      param=parseFloat(this._parent.getToolByName('memory')?.recall('siding_calc_cut_height')); //TODO: Isn't it sholud be in material specs?
       if (!isNaN(param))
          this.cutHeight=param;
       
-      param=parseFloat(this._parent.getToolByName('memory')?.recall('siding_calc_max_len'));
+      param=parseFloat(this._parent.getToolByName('memory')?.recall('siding_calc_max_len')); //TODO: Isn't it sholud be in material specs?
       if (!isNaN(param))
          this.stripeMaxLength=param;
       
@@ -268,12 +287,12 @@ export class CalcTool extends Tool
       if (!isNaN(param))
          this.crossbarStep=param;
       
-      param=this._parent.getToolByName('memory')?.recall('siding_calc_crossbars');
-      if (param)
-         for (var crossbar of param)
-            this.addCrossbar(crossbar);
+      //param=this._parent.getToolByName('memory')?.recall('siding_calc_crossbars');
+      //if (param)
+      //   for (var crossbar of param)
+      //      this.addCrossbar(crossbar);
          
-      this.material=this._parent.getToolByName('memory')?.recall('siding_calc_material');
+      //this.material=this._parent.getToolByName('memory')?.recall('siding_calc_material');
       
       param=this._parent.getToolByName('memory')?.recall('siding_calc_user_contacts')??{};
       for (var inp of this.contactInputs)
@@ -357,6 +376,9 @@ export class CalcTool extends Tool
       this._parent.getToolByName('memory')?.memorize('siding_calc_col_step',this._crossbarStep);
    }
    
+   get crossbars(){return this._crossbars;}
+   set crossbars(newVal_){return this._crossbars=Array.from(newVal_);}
+   
    set material(val_)
    {
       if (val_)
@@ -370,6 +392,8 @@ export class CalcTool extends Tool
       }
    }
    
+   get lnkSaveLocal(){return this._panelNodes.lnkSaveLocal;}
+   
    //private methods
    changeCrossbar(indx_,coord_)
    {
@@ -377,7 +401,7 @@ export class CalcTool extends Tool
       {
          this._crossbars[indx_]=coord_;
          
-         this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
+         //this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
       }
    }
    
@@ -389,7 +413,7 @@ export class CalcTool extends Tool
       {
          var listNode=this._toolPanel.querySelector('.columns .list');
          this._crossbars.push(coord_);
-         this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
+         //this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
          
          if (listNode)
          {
@@ -410,7 +434,7 @@ export class CalcTool extends Tool
       if (indx>-1)
       {
          this._crossbars.splice(indx,1);
-         this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
+         //this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
       }
    }
    
@@ -423,7 +447,7 @@ export class CalcTool extends Tool
          if (items[i])
             items[i].value=this._crossbars[i];
       
-      this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
+      //this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
    }
    
    onRepaintOverlay(overlay_)

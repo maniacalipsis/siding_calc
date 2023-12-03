@@ -1,4 +1,4 @@
-import {decorateInputFieldVal,bindEvtInputToDeferredChange,buildNodes,clone,getCookie,DynamicForm,DynamicFormItem} from './core/js_utils.js';
+import {decorateInputFieldVal,bindEvtInputToDeferredChange,buildNodes,clone,getCookie,DynamicForm,DynamicFormItem,reqServer} from './core/js_utils.js';
 import * as GU from './graph_utils.js';
 
 if (!('structuredClone' in (globalThis??window)))
@@ -49,14 +49,15 @@ export class StepsTool extends Tool
 
       //Init steps selector:
       var stpStructs=[
-                        {tagName:'div',className:'step sel enabled',childNodes:[{tagName:'span',textContent:'1. Фигура'}],dataset:{step:0}},
-                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'2. Размер'}],dataset:{step:1}},
-                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'3. Вырез'}],dataset:{step:2}},
-                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'4. Размер выреза'}],dataset:{step:3}},
-                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'5. Раскладка'}],dataset:{step:4}},
-                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'6. Выбор материала'}],dataset:{step:5}},
-                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'7. Результат'}],dataset:{step:6}},
-                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'8. Получить'}],dataset:{step:7}},
+                        {tagName:'div',className:'step sel enabled',childNodes:[{tagName:'span',textContent:'1. Начало'}],dataset:{step:0}},
+                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'2. Фигура'}],dataset:{step:0}},
+                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'3. Размер'}],dataset:{step:1}},
+                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'4. Вырез'}],dataset:{step:2}},
+                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'5. Размер выреза'}],dataset:{step:3}},
+                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'6. Раскладка'}],dataset:{step:4}},
+                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'7. Выбор материала'}],dataset:{step:5}},
+                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'8. Результат'}],dataset:{step:6}},
+                        {tagName:'div',className:'step',childNodes:[{tagName:'span',textContent:'9. Получить'}],dataset:{step:7}},
                      ];
       for (var stpStruct of stpStructs)
          this._stepSelectors.push(buildNodes(stpStruct));
@@ -70,50 +71,104 @@ export class StepsTool extends Tool
          }
       
       //Tool panel:
-      let struct={
-                    tagName:'div',
-                    className:'panel steps',
-                    childNodes:[
-                                  {tagName:'h2',className:'figure',textContent:'Шаг 1. Фигура'},
-                                  {tagName:'h2',className:'cut',textContent:'Шаг 3. Вырез'},
-                                  hintStructs.figure,
-                                  hintStructs.cut,
-                                  {
-                                     tagName:'div',
-                                     className:'figure_sel flex around',
-                                     childNodes:[
-                                                   {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'rect'     ,className:'rect'     ,onclick:(e_)=>{this._figureType='rect'; this.step++;}},'Прямоугольник']},
-                                                   {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'trapezoid',className:'trapezoid',onclick:(e_)=>{this._figureType='trapezoid'; this.step++;}},'Трапеция']},
-                                                   {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'triangle' ,className:'triangle' ,onclick:(e_)=>{this._figureType='triangle'; this.step++;}},'Треугольник']},
-                                                   {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'polyline' ,className:'polyline' ,onclick:(e_)=>{this._figureType='polyline'; this.step++;}},'Произвольная фигура']}
-                                                ]
-                                  },
-                                  {
-                                     tagName:'div',
-                                     className:'cuts hidden',
-                                     childNodes:[
-                                                   {tagName:'h3',textContent:'Изменить вырез'},
-                                                   {tagName:'div',className:'figure_sel flex'}
-                                                ]
-                                  },
-                                  {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад',onclick:(e_)=>{this.step--;}},{tagName:'input',type:'button',className:'next',value:'Далее',onclick:(e_)=>{this.step++;}}]}
-                               ]
-                 };
-      this._toolPanel=buildNodes(struct);
+      let structStart={
+                         tagName:'div',
+                         className:'panel steps',
+                         childNodes:[
+                                       {tagName:'h2',className:'start',textContent:'Шаг 1. Начать/открыть проект'},
+                                       {
+                                          tagName:'div',
+                                          className:'flex col x-center gap_m',
+                                          childNodes:[
+                                                        {tagName:'input',type:'button',className:'next new',value:'Начать новый проект',_collectAs:'btnReStart'},
+                                                        {
+                                                           tagName:'label',
+                                                           className:'file',
+                                                           childNodes:[
+                                                                          {tagName:'span',textContent:'Открыть файл',className:'caption'},
+                                                                          {tagName:'input',type:'file',accept:'application/json',_collectAs:'inpDataFile'},
+                                                                      ],
+                                                        },
+                                                        {tagName:'input',type:'button',className:'next existing',value:'Продолжить',_collectAs:'btnLoadFile'},
+                                                     ],
+                                       }
+                                    ],
+                      };
+      let structFig={
+                       tagName:'div',
+                       className:'panel steps',
+                       childNodes:[
+                                     {tagName:'h2',className:'figure',textContent:'Шаг 2. Фигура'},
+                                     hintStructs.figure,
+                                     {
+                                        tagName:'div',
+                                        className:'figure_sel flex around',
+                                        childNodes:[
+                                                      {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'rect'     ,className:'rect'     ,onclick:(e_)=>{this._figureType='rect'; this.step++;}},'Прямоугольник']},
+                                                      {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'trapezoid',className:'trapezoid',onclick:(e_)=>{this._figureType='trapezoid'; this.step++;}},'Трапеция']},
+                                                      {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'triangle' ,className:'triangle' ,onclick:(e_)=>{this._figureType='triangle'; this.step++;}},'Треугольник']},
+                                                      {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'polyline' ,className:'polyline' ,onclick:(e_)=>{this._figureType='polyline'; this.step++;}},'Произвольная фигура']}
+                                                   ]
+                                     },
+                                     //{tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад',onclick:(e_)=>{this.step--;}},{tagName:'input',type:'button',className:'next',value:'Далее',onclick:(e_)=>{this.step++;}}]}
+                                  ],
+                    };
+      let structCut={
+                       tagName:'div',
+                       className:'panel steps cut',
+                       childNodes:[
+                                     {tagName:'h2',className:'cut',textContent:'Шаг 4. Вырез'},
+                                     hintStructs.cut,
+                                     {
+                                        tagName:'div',
+                                        className:'figure_sel flex around',
+                                        childNodes:[
+                                                      {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'rect'     ,className:'rect'     ,onclick:(e_)=>{this._figureType='rect'; this.step++;}},'Прямоугольник']},
+                                                      {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'trapezoid',className:'trapezoid',onclick:(e_)=>{this._figureType='trapezoid'; this.step++;}},'Трапеция']},
+                                                      {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'triangle' ,className:'triangle' ,onclick:(e_)=>{this._figureType='triangle'; this.step++;}},'Треугольник']},
+                                                      {tagName:'label',childNodes:[{tagName:'input',type:'button',name:'polyline' ,className:'polyline' ,onclick:(e_)=>{this._figureType='polyline'; this.step++;}},'Произвольная фигура']}
+                                                   ]
+                                     },
+                                     {
+                                        tagName:'div',
+                                        className:'cuts',
+                                        childNodes:[
+                                                      {tagName:'h3',textContent:'Изменить вырез'},
+                                                      {tagName:'div',className:'figure_sel flex',_collectAs:'cutsContainer'}
+                                                   ],
+                                        _collectAs:'cutsPanel',
+                                     },
+                                     {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад',onclick:(e_)=>{this.step--;}},{tagName:'input',type:'button',className:'next',value:'Далее',onclick:(e_)=>{this.step++;}}]}
+                                  ]
+                    };
+      this._toolPanels={
+                          start:buildNodes(structStart,this._panelNodes),
+                          figs :buildNodes(structFig,this._panelNodes),
+                          cuts :buildNodes(structCut,this._panelNodes),
+                       };
+      this._toolPanel=this._toolPanels.start;
       
-      //Cuts selector
-      this._cutsPanel=this._toolPanel.querySelector('.cuts');
-      this._cutsContainer=this._cutsPanel.querySelector('.figure_sel');
+      //Init events:
+      this._panelNodes.btnReStart.addEventListener('click',(e_)=>{if (this.parent.figuresLength==0) this.step++; else if (confirm('Начать сначала?\n(Все фигуры будут удалены)')) {this.parent.clear(); this.step++;} else this.step+=2; });
+      this._panelNodes.btnLoadFile.addEventListener('click',(e_)=>{this._loadLocalFile().then((isLoaded_)=>{this.step+=(1+isLoaded_);}).catch((err_)=>{alert(err_); this._panelNodes.inpDataFile.value=null;});});
+      
+      //Open file by URL:
+      let matches=document.location.search.match(/(?<=[?&]f\=)[0-9a-z]+/i);
+      if (matches?.[0])
+         reqServer(null,{action:'recall_data',f:matches[0]})
+            .then((ans_)=>{if (ans_.status=='success') this._restoreData(ans_); else alert(ans_.errors?.join('\n')??'Не удалось получить данные по ссылке.');})
+            .catch((xhr_)=>{alert('Не удалось запросить данные по ссылке.');});
    }
    
    //private props
    _step=0;
    _farestStep=0;
-   _maxSteps=7;
+   _maxSteps=8;
    _figureType='';
    
    _stepSelectors=[];
    _selectedCut=null;
+   _panelNodes={};
    
    //public props
    get name(){return 'steps';}
@@ -158,29 +213,27 @@ export class StepsTool extends Tool
       {
          case 0:
          {
+            //Create or open a new project:
+            this._switchToolPanel(this._toolPanels.start);
+            
+            break;
+         }
+         case 1:
+         {
             //Choose main figure type:
+            
             if (this.parent.figuresLength>0)
-            {
-               if (confirm('Начать сначала?\n(Все фигуры будут удалены)'))
-               {
-                  //Reset:
-                  this.parent.clear();
-                  this._toolPanel.classList.remove('cut');
-                  this.parent.activeTool=this;
-                  this._figureType='';
-               }
-               else
-                  this.step++;   //Skip this step.
-            }
+               this.step++;   //Skip this step.
             else
             {
+               this._switchToolPanel(this._toolPanels.figs);
                this.parent.activeTool=this;
                /*At this point this._figureType is expected to be set by one of the buttons.*/
             }
             
             break;
          }
-         case 1:
+         case 2:
          {
             //Create/setup main figure:
             let tool=null;
@@ -198,22 +251,22 @@ export class StepsTool extends Tool
                tool.bindToFigure(this.parent.at(0));
             }
             
-            this._saveState();
-            
-            break;
-         }
-         case 2:
-         {
-            //Choose cut figure type:
-            this._toolPanel.classList.add('cut');
-            this.parent.activeTool=this;
-            this._figureType='';
-            
-            this._saveState();
+            //this._saveState();
             
             break;
          }
          case 3:
+         {
+            //Choose cut figure type:
+            this._switchToolPanel(this._toolPanels.cuts);
+            this.parent.activeTool=this;
+            this._figureType='';
+            
+            //this._saveState();
+            
+            break;
+         }
+         case 4:
          {
             //Add/setup cuts:
             if ((this._figureType=='')&&(this.parent.selectionLength==0))
@@ -238,10 +291,10 @@ export class StepsTool extends Tool
                }
             }
             
-            this._saveState();
+            //this._saveState();
             break;
          }
-         case 4:
+         case 5:
          {
             //Setup layout:
             var tool=this.parent.getToolByName('calc');
@@ -257,10 +310,10 @@ export class StepsTool extends Tool
                }
             }
             
-            this._saveState();
+            //this._saveState();
             break;
          }
-         case 5:
+         case 6:
          {
             //Choose coverage params:
             var tool=this.parent.getToolByName('calc');
@@ -277,7 +330,7 @@ export class StepsTool extends Tool
             }
             break;
          }
-         case 6:
+         case 7:
          {
             //Choose siding:
             var tool=this.parent.getToolByName('calc');
@@ -288,10 +341,14 @@ export class StepsTool extends Tool
                
                this.parent.fitToViewport(this.parent.figuresIt);
                tool.calcFilling();
+               
+               if (tool.lnkSaveLocal.href)
+                  URL.revokeObjectURL(tool.lnkSaveLocal.getAttribute('href'));
+               tool.lnkSaveLocal.setAttribute('href',URL.createObjectURL(new Blob([JSON.stringify(this._collectData(),null,3)],{type:"application/json"})));
             }
             break;
          }
-         case 7:
+         case 8:
          {
             //Display siding layout:
             var tool=this.parent.getToolByName('calc');
@@ -311,7 +368,7 @@ export class StepsTool extends Tool
    onReady()
    {
       //Recall figures:
-      this._restoreState();
+      //this._restoreState();
       if (this.parent.figuresLength>0)
          this.step=0;
    }
@@ -329,11 +386,18 @@ export class StepsTool extends Tool
    }
    
    //private methods
+   _switchToolPanel(newPanel_)
+   {
+      if (this._toolPanel&&this._toolPanel.parentNode&&newPanel_)
+         this._toolPanel.parentNode.replaceChild(newPanel_,this._toolPanel);
+      this._toolPanel=newPanel_;
+   }
+   
    _repaintCutsList()
    {
-      if (this._cutsPanel&&this._cutsContainer)
+      if (this._panelNodes.cutsPanel&&this._panelNodes.cutsContainer)
       {
-         this._cutsContainer.innerHTML='';
+         this._panelNodes.cutsContainer.innerHTML='';
          for (let [i,figure] of this.parent.figuresEnt)
             if (figure.mode=='cut')
             {
@@ -341,16 +405,16 @@ export class StepsTool extends Tool
                              tagName:'div',
                              childNodes:[
                                            {tagName:'input',type:'button',className:figure.type,value:'',dataset:{indx:i},onclick:(e_)=>{this.parent.select(this.parent.at(parseInt(e_.target.dataset.indx)));}},
-                                           {tagName:'input',type:'button',className:'tool clr',value:'✕',title:'Удалить',dataset:{indx:i},onclick:(e_)=>{this.parent.splice(parseInt(e_.target.dataset.indx),1); this._repaintCutsList();}}
+                                           {tagName:'input',type:'button',className:'tool clr',value:'✕',title:'Удалить',dataset:{indx:i},onclick:(e_)=>{this.parent.splice(parseInt(e_.target.dataset.indx),1); this._repaintCutsList();}},
                                         ],
                           };
-               this._cutsContainer.appendChild(buildNodes(struct));
+               this._panelNodes.cutsContainer.appendChild(buildNodes(struct));
             }
          
-         this._cutsPanel.classList.remove('hidden');
+         this._panelNodes.cutsPanel.classList.remove('hidden');
       }
-      else if (this._cutsPanel)
-         this._cutsPanel.classList.add('hidden');
+      else if (this._panelNodes.cutsPanel)
+         this._panelNodes.cutsPanel.classList.add('hidden');
    }
    
    _saveState()
@@ -364,6 +428,87 @@ export class StepsTool extends Tool
       let mem=this._parent.getToolByName('memory');
       this._parent.clear();
       this._parent.append(...(mem?.recall('siding_calc_figures')??[]));
+   }
+   
+   _collectData()
+   {
+      let calc=this._parent.getToolByName('calc');
+      //NOTE: Keep in sync with validation in the store_data().
+      let res={
+                 figures:this._parent.list(),
+                 material:calc.material,
+                 cutAxis:calc.cutAxis,
+                 cutOffset:calc.cutOffset,
+                 crossbars:calc.crossbars,
+              };
+      return res;
+   }
+   
+   _fixData(data_)
+   {
+      let res=data_;
+      
+      if (data_ instanceof Array)
+      {
+         for (let i in data_)
+            data_[i]=this._fixData(data_[i]);
+      }
+      else if (data_ instanceof Object)
+      {
+         for (let k in data_)
+            data_[k]=this._fixData(data_[k]);
+      }
+      else 
+      {
+         let num=parseFloat(data_);
+         if (!isNaN(num))
+            res=num;
+      }
+      
+      return res;
+   }
+   
+   _restoreData(data_)
+   {
+      data_=this._fixData(data_);
+      console.log(data_);
+      
+      this._parent.clear();
+      this._parent.append(...(data_.figures??[]));
+      
+      let calc=this._parent.getToolByName('calc');
+      calc.material=data_?.material;
+      calc.cutAxis=data_?.cutAxis??'x';
+      calc.cutOffset=data_?.cutOffset??0;
+      calc.crossbars=data_?.crossbars??[];
+   }
+   
+   _loadLocalFile()
+   {
+      return new Promise((onResolve,onReject)=>{
+                                                  if (this._panelNodes.inpDataFile.files.length>0)
+                                                  {
+                                                     let reader=new FileReader();
+                                                     reader.addEventListener('load',(e_)=>{
+                                                                                             try
+                                                                                             {
+                                                                                                let data=JSON.parse(reader.result);
+                                                                                                this._restoreData(data);
+                                                                                                onResolve(true);
+                                                                                             }
+                                                                                             catch (ex)
+                                                                                             {
+                                                                                                onReject(ex.message);
+                                                                                             }
+                                                                                          });
+                                                     reader.addEventListener('error',(e_)=>{onReject('Не удалось загрузить файл.');});
+                                                     reader.addEventListener('abort',(e_)=>{onReject('Не удалось загрузить файл.');});
+                                                     reader.readAsText(this._panelNodes.inpDataFile.files[0]);
+                                                  }
+                                                  else
+                                                     onResolve(false);
+                                               }
+                        );
    }
 }
 
@@ -1059,7 +1204,6 @@ export class MemoryTool extends Tool
    {
       //Saves a value in local memory.
       
-      console.log('Memorize',key_,val_);
       if (window.localStorage)
          window.localStorage.setItem(key_,JSON.stringify(val_));
       else
@@ -1084,7 +1228,6 @@ export class MemoryTool extends Tool
       }
       finally
       {
-         console.log('Recall',key_,val);
          return val;
       }
    }
