@@ -5,6 +5,8 @@ error_reporting(E_ERROR);
 define("PAGE_ROOT","");
 define("ROOT_DIR",rtrim($_SERVER["DOCUMENT_ROOT"],"/").PAGE_ROOT);
 
+define("STORAGE_DIR",rtrim($_SERVER["DOCUMENT_ROOT"],"/")."/.storage");
+
 define("SERVER_HOST","ntkzavod.com.ua");
 define("MAIL_SENDER","info@".SERVER_HOST);
 define("ADMIN_EMAIL","info@allzap.pro,vda777@gmail.com");

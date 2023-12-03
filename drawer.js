@@ -92,7 +92,7 @@ export class Drawer
             //Initially adjust canvas sizes and repaint
             this.resize();
             this._origin.y=this._overlay.height-20;
-            this.repaint();
+            window.requestAnimationFrame(()=>{this.repaint()});
             this.refreshStatusbar();
             
             for (let tool of this._tools) //TODO: Was removed in prod.
@@ -142,8 +142,10 @@ export class Drawer
          this._cursor.y=pos_.y;
       this._cursor=GU.roundPoint(this._cursor);
       
-      this.repaintOverlay();
-      this.refreshStatusbar();
+      window.requestAnimationFrame(()=>{
+                                          this.repaintOverlay();
+                                          this.refreshStatusbar();
+                                       })
    }
    
    get zoom(){return this._zoomLevel;}
@@ -158,7 +160,7 @@ export class Drawer
       this._origin.x+=(cursorAtCanvas.x-newCurAtCanvas.x);     //
       this._origin.y+=(cursorAtCanvas.y-newCurAtCanvas.y);     //
       
-      this.repaint();
+      window.requestAnimationFrame(()=>{this.repaint()});
       this.refreshStatusbar();
    }
    
@@ -187,7 +189,7 @@ export class Drawer
             }
          }
          
-         this.repaintOverlay();
+         window.requestAnimationFrame(()=>{this.repaintOverlay()});;
       }
       else if (this._activeTool)
       {
@@ -254,7 +256,7 @@ export class Drawer
       this._overlay.width=size_.w;
       this._overlay.height=size_.h;
       
-      this.repaint();
+      window.requestAnimationFrame(()=>{this.repaint()});
    }
    
    lengthToWorld(val_)
@@ -913,7 +915,7 @@ export class Drawer
    {
       this._origin=GU.moveRect(this._origin,(isCanvasCoords_ ? delta_ : {x:this.lengthToCanvas(delta_.x),y:this.lengthToCanvas(delta_.y)}));
       
-      this.repaint();
+      window.requestAnimationFrame(()=>{this.repaint()});
       this.refreshStatusbar();
    }
    
@@ -938,7 +940,7 @@ export class Drawer
          var lb=this.pointToCanvas(vect);
          this._origin=GU.moveRect(this._origin,{x:-lb.x,y:this._canvas.height-lb.y});
          this._zoomLevel*=Math.min(this.lengthToWorld(this._canvas.width)/vect.w,this.lengthToWorld(this._canvas.height/vect.h));
-         this.repaint();
+         window.requestAnimationFrame(()=>{this.repaint()});
       }
    }
    
@@ -995,7 +997,7 @@ export class Drawer
       this._figures.push(...figs_);
       
       this._compoundFigureCache=null;
-      this.repaint();
+      window.requestAnimationFrame(()=>{this.repaint()});
    }
    
    splice(startIndex_,deleteCount_,...figs_)
@@ -1007,7 +1009,7 @@ export class Drawer
          this.deselect(fig);
       
       this._compoundFigureCache=null;
-      this.repaint();
+      window.requestAnimationFrame(()=>{this.repaint()});
       
       return removed;
    }
@@ -1019,7 +1021,7 @@ export class Drawer
       this._figures=[];
       this._selection=[];
       this._compoundFigureCache=null;
-      this.repaint();
+      window.requestAnimationFrame(()=>{this.repaint()});
    }
    
    reorderFigures(figures_,shift_)
@@ -1039,7 +1041,7 @@ export class Drawer
             }
          }
          this._compoundFigureCache=null;
-         this.repaint();
+         window.requestAnimationFrame(()=>{this.repaint()});
       }
    }
    
@@ -1148,7 +1150,7 @@ export class Drawer
                }
             }
          this._compoundFigureCache=null;
-         this.repaint();
+         window.requestAnimationFrame(()=>{this.repaint()});
       }
    }
    
@@ -1355,14 +1357,14 @@ export class Drawer
             this._selection.splice(indx,1);
       }
       
-      this.repaintOverlay();
+      window.requestAnimationFrame(()=>{this.repaintOverlay()});;
    }
    
    deselectAll()
    {
       this._selection=[];
       
-      this.repaintOverlay();
+      window.requestAnimationFrame(()=>{this.repaintOverlay()});;
    }
    
    select(figures_)
@@ -1377,7 +1379,7 @@ export class Drawer
             this._selection.push(figure);
       }
       
-      this.repaintOverlay();
+      window.requestAnimationFrame(()=>{this.repaintOverlay()});;
    }
    
    selectionAt(indx_)
@@ -1389,7 +1391,7 @@ export class Drawer
    {
       this._selection=[].concat(this._figures);
       
-      this.repaintOverlay();
+      window.requestAnimationFrame(()=>{this.repaintOverlay()});;
    }
    
    onResize(e_)
