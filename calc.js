@@ -1,4 +1,4 @@
-import {decorateInputFieldVal,bindEvtInputToDeferredChange,buildNodes,clone,parseCompleteFloat,reqServer} from './core/js_utils.js';
+import {RadioGroup,decorateInputFieldVal,bindEvtInputToDeferredChange,buildNodes,DynamicList,DynamicListItem,clone,parseCompleteFloat,reqServer} from './core/js_utils.js';
 import * as GU from './graph_utils.js';
 import {Tool} from './tools.js';
 
@@ -13,47 +13,15 @@ export class CalcTool extends Tool
    {
       super(parent_);
       
-      //private props
-      this._panelNodes={};
-      this.visuals=null;
-      this.inputs={};
-      this.contactInputs=[];
-      
-      this._cutOffset=0;
-      this._cutAxis='x';
-      this._cutHeight=1;
-      this._stripeMaxLength=14;
-      this._crossbarStep=1;   //TODO: obsolete?
-      
-      this._crossbars=[];
-      
-      this._material='';
-      this._matThickness=0;
-      this._price=0;
-      
-      //public props
-      this.precision=1000;
-      
       //Create tool panel:
-      let materials=[
-                       //Material height and max_len are measured in meters.
-                       {group:'mv' ,name:'Сэндвич панели МВ' ,key:'mv'      ,thickness:0.050,price:100,height:1.000,max_len:14},
-                       {group:'pp' ,name:'Сэндвич панели ПП' ,key:'pp'      ,thickness:0.050,price:101,height:1.000,max_len:14},
-                       {group:'ppu',name:'Сэндвич панели ППу',key:'ppu'     ,thickness:0.050,price:102,height:1.160,max_len:14},
-                       {group:'cs' ,name:'Профнастил C-2.5'  ,key:'profc25' ,thickness:0.5  ,price:103,height:1.200,max_len:14},
-                       {group:'cs' ,name:'Профнастил C-10'   ,key:'profc10' ,thickness:0.5  ,price:104,height:1.145,max_len:14},
-                       {group:'cs' ,name:'Профнастил НС-20'  ,key:'profhc20',thickness:0.5  ,price:105,height:1.080,max_len:14},
-                       {group:'cs' ,name:'Профнастил НС-44'  ,key:'profhc44',thickness:0.5  ,price:106,height:1.010,max_len:14},
-                       {group:'cs' ,name:'Профнастил Н-57'   ,key:'profh57' ,thickness:0.5  ,price:107,height:0.950,max_len:14},
-                    ];
-      let materialOptions=[];
-      let matGrp=materials[0]?.group??null;
-      for (let mat of materials)
+      let selMaterialOpts=[];
+      let matGrp=this._materials.values().next().value?.group??null;
+      for (let [key,mat] of this._materials)
       {
-         materialOptions.push({tagName:'option',textContent:mat.name,value:mat.key+','+mat.thickness+','+mat.price+','+mat.height+','+mat.max_len});
+         selMaterialOpts.push({tagName:'option',textContent:mat.name,value:key});
          if (mat.group!=matGrp)
          {
-            materialOptions.push({tagName:'option',disabled:true,textContent:'---------------'});
+            selMaterialOpts.push({tagName:'option',disabled:true,textContent:'---------------'});
             matGrp=mat.group;
          }
       }
@@ -68,8 +36,8 @@ export class CalcTool extends Tool
                                      tagName:'div',
                                      className:'opts layout',
                                      childNodes:[
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'Горизонтальная'},{tagName:'input',type:'radio',name:'direction',value:'x',_collectAs:'direction_x'}]},
-                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'Вертикальная'},{tagName:'input',type:'radio',name:'direction',value:'y',_collectAs:'direction_y'}]},
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'Горизонтальная'},{tagName:'input',type:'radio',name:'direction',value:'x',_collectAs:['inputs','direction','x']}]},
+                                                   {tagName:'label',className:'radio right',childNodes:[{tagName:'span',textContent:'Вертикальная'},{tagName:'input',type:'radio',name:'direction',value:'y',_collectAs:['inputs','direction','y']}]},
                                                 ]
                                   },
                                   {tagName:'h3',className:'layout',textContent:'Прогон/ригель (от правого края)'},
@@ -77,14 +45,14 @@ export class CalcTool extends Tool
                                      tagName:'div',
                                      className:'opts columns layout',
                                      childNodes:[
-                                                   {tagName:'div',className:'list p'},
+                                                   {tagName:'div',className:'list p',_collectAs:'blkCrossbars'},
                                                    {
                                                       tagName:'div',
                                                       childNodes:[
                                                                     {tagName:'span',textContent:'Добавить через'},
-                                                                    {tagName:'input',type:'number',name:'step',min:0.01,step:0.01,value:1},
+                                                                    {tagName:'input',type:'number',name:'step',min:0.01,step:0.01,value:1,_collectAs:['inputs','crossbarStep']},
                                                                     {tagName:'span',className:'unit',textContent:'м'},
-                                                                    {tagName:'input',className:'tool ok add',type:'button',value:'+',title:'Добавить',onclick:(e_)=>{this.addCrossbar((this._crossbars.length>0 ? this._crossbars[this._crossbars.length-1] : 0)+this.crossbarStep); this.calcFilling(); e_.target.blur();}}
+                                                                    {tagName:'input',className:'tool ok add',type:'button',value:'+',title:'Добавить',onclick:(e_)=>{let crossbars=this._crossbarsList.sorted; this._crossbarsList.add((crossbars[crossbars.length-1]??0)+this.crossbarStep);}}
                                                                  ]
                                                    }
                                                 ]
@@ -94,7 +62,8 @@ export class CalcTool extends Tool
                                      tagName:'select',
                                      name:'material',
                                      className:'opts material',
-                                     childNodes:materialOptions,
+                                     childNodes:selMaterialOpts,
+                                     _collectAs:['inputs','material'],
                                   },
                                   {tagName:'h2',className:'result',textContent:'Шаг 7. Результат'},
                                   {
@@ -153,11 +122,11 @@ export class CalcTool extends Tool
                                                       tagName:'div',
                                                       className:'options opts',
                                                       childNodes:[
-                                                                    {tagName:'input',type:'hidden',name:'res_opts[]',value:'spec'},
-                                                                    {tagName:'input',type:'hidden',name:'res_opts[]',value:'drawing'},
-                                                                    {tagName:'input',type:'hidden',name:'res_opts[]',value:'optimize'},
-                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Расчет стоимости'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'price',className:'req_price'}]},
-                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Ccылку на проект'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'link',className:'req_link'}]},
+                                                                    {tagName:'input',type:'hidden',name:'res_opts[]',value:'spec'    ,_collectAs:['inputs','resOpts',0]},
+                                                                    {tagName:'input',type:'hidden',name:'res_opts[]',value:'drawing' ,_collectAs:['inputs','resOpts',1]},
+                                                                    {tagName:'input',type:'hidden',name:'res_opts[]',value:'optimize',_collectAs:['inputs','resOpts',2]},
+                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Расчет стоимости'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'price',className:'req_price',_collectAs:['inputs','resOpts',3]}]},
+                                                                    {tagName:'label',className:'checkbox right',childNodes:[{tagName:'span',textContent: 'Ccылку на проект'},{tagName:'input',type:'checkbox',name:'res_opts[]',value:'link',className:'req_link'  ,_collectAs:['inputs','resOpts',4]}]},
                                                                  ]
                                                    },
                                                    {tagName:'h3',textContent:'Контактные данные'},
@@ -166,139 +135,72 @@ export class CalcTool extends Tool
                                                       tagName:'div',
                                                       className:'contact opts',
                                                       childNodes:[
-                                                                    {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'Ваше имя'},{tagName:'input',type:'text',name:'contacts[name]',required:true,value:''}]},
-                                                                    {tagName:'label',className:'phone',childNodes:[{tagName:'span',className:'req',textContent:'Телефон'},{tagName:'input',type:'text',name:'contacts[phone]',required:true,pattern:'^\\+?[0-9]{10}$',value:''}]},
-                                                                    {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'E-mail'},{tagName:'input',type:'text',name:'contacts[email]',required:true,pattern:'^[a-z0-9\\._%\\+\\-]+@[a-z0-9\\.\\-]+\\.[a-z]{2,4}$',value:''}]}
+                                                                    {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'Ваше имя'},{tagName:'input',type:'text',name:'contacts[name]',required:true,value:'',_collectAs:['inputs','contacts','name']}]},
+                                                                    {tagName:'label',className:'phone',childNodes:[{tagName:'span',className:'req',textContent:'Телефон'},{tagName:'input',type:'text',name:'contacts[phone]',required:true,pattern:'^\\+?[0-9]{10}$',value:'',_collectAs:['inputs','contacts','phone']}]},
+                                                                    {tagName:'label',childNodes:[{tagName:'span',className:'req',textContent:'E-mail'},{tagName:'input',type:'text',name:'contacts[email]',required:true,pattern:'^[a-z0-9\\._%\\+\\-]+@[a-z0-9\\.\\-]+\\.[a-z]{2,4}$',value:'',_collectAs:['inputs','contacts','email']}]}
                                                                  ]
                                                    },
-                                                   {tagName:'div',className:'message p hidden'},
+                                                   {tagName:'div',className:'message p',_collectAs:'blkMessage'},
                                                 ]
                                   },
-                                  {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад'},{tagName:'input',type:'button',className:'next',value:'Далее'},{tagName:'input',type:'button',className:'send',value:'Получить'}]},
+                                  {tagName:'div',className:'nav',childNodes:[{tagName:'input',type:'button',className:'alt prev',value:'Назад',_collectAs:'btnPrev'},{tagName:'input',type:'button',className:'next',value:'Далее',_collectAs:'btnNext'},{tagName:'input',type:'button',className:'send',value:'Получить',_collectAs:'btnSend'}]},
                                   {tagName:'div',className:'nav final',childNodes:[{tagName:'input',type:'button',className:'final_prev',value:'Начать сначала'}]}
                                ]
                  };
-      this._toolPanel=buildNodes(struct,this._panelNodes);
+      this._toolPanel=buildNodes(struct,this._insidesCollection);
       
-      this.inputs.dir=this._toolPanel.querySelectorAll('.panel.calc input[name=\'direction\']');
-      this.inputs.crossbarStep=this._toolPanel.querySelector('.panel.calc input[name=\'step\']');
-      //this.inputs.offset=this._toolPanel.querySelector('.panel.calc input[name=\'offset\']');
-      //this.inputs.cutHeight=this._toolPanel.querySelector('.panel.calc input[name=\'cut_height\']');
-      //this.inputs.maxLength=this._toolPanel.querySelector('.panel.calc input[name=\'max_len\']');
-      this.contactInputs=this._toolPanel.querySelectorAll('input[name^=contacts]');
-      this.inputs.mat=this._toolPanel.querySelector('.panel.calc select[name=\'material\']');
-      this.btnPrev=this._toolPanel.querySelector('.panel.calc input[type=button].prev');
-      this.btnNext=this._toolPanel.querySelector('.panel.calc input[type=button].next');
-      this.btnSend=this._toolPanel.querySelector('.panel.calc input[type=button].send');
+      this._crossbarsList=new CrossBarsList(this,{itemClass:CrossBar,itemClassParams:{},listNode:this._insidesCollection.blkCrossbars});
       
-      for (var radio of this.inputs.dir)
-         radio.addEventListener('click',(e_)=>{this.cutAxis=e_.target.value; e_.target.blur();});
-      this.inputs.crossbarStep.addEventListener('input',(e_)=>{var val=parseCompleteFloat(e_.target.value); if (!isNaN(val)&&val>0.01){this.crossbarStep=val; this.calcFilling();}});
-      //this.inputs.offset.addEventListener('input',(e_)=>{var val=parseCompleteFloat(e_.target.value); if (!isNaN(val)){this.cutOffset=val; this.calcFilling();}});
-      //this.inputs.cutHeight.addEventListener('input',(e_)=>{var val=parseCompleteFloat(e_.target.value); if (!isNaN(val)&&val>0.01){this.cutHeight=val; this.calcFilling();}});
-      //this.inputs.maxLength.addEventListener('input',(e_)=>{var val=parseCompleteFloat(e_.target.value); if (!isNaN(val)&&val>0.01){this.stripeMaxLength=val; this.calcFilling();}});
+      //Group the radios:
+      this._insidesCollection.inputs.direction=new RadioGroup(Object.entries(this._insidesCollection.inputs.direction));
+      //Decorate inputs with prop valueAsMixed:
+      this._insidesCollection.inputs.resOpts=new InpArray(Object.entries(this._insidesCollection.inputs.resOpts));
+      for (let [key,inp] of Object.entries(this._insidesCollection.inputs))
+         if ((inp instanceof HTMLElement)||(inp instanceof RadioGroup))
+            decorateInputFieldVal(inp);
+      for (let [key,inp] of Object.entries(this._insidesCollection.inputs.contacts))
+         decorateInputFieldVal(inp);
       
-      this.inputs.mat.addEventListener('change',(e_)=>{this.material=e_.target.value; e_.target.blur();});
-      
-      for (var inp of this.contactInputs)
+      //Assign event listeners:
+      this._insidesCollection.inputs.direction.onSetValue=(val_)=>{this.cutAxis=val_;};
+      this._insidesCollection.inputs.crossbarStep.addEventListener('input',(e_)=>{this.crossbarStep=e_.target.valueAsMixed; this.calcFilling();});
+      //this._insidesCollection.inputs.cutOffset.addEventListener('input',(e_)=>{this.cutOffset=e_.target.valueAsMixed; this.calcFilling();});
+      this._insidesCollection.inputs.material.addEventListener('change',(e_)=>{this._materialKey=e_.target.valueAsMixed});
+      for (let [key,inp] of Object.entries(this._insidesCollection.inputs.contacts))
          inp.addEventListener('input',(e_)=>{e_.target.classList.toggle('invalid',e_.target.value=='');});
       
-      this.btnPrev.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
-      this.btnNext.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; e_.target.blur();}});
-      this.btnSend.addEventListener('click',(e_)=>{
-                                                     //Validate contacts
-                                                     var messBlk=this._toolPanel.querySelector('.message');
-                                                     try
-                                                     {
-                                                        var contacts={name:'',phone:'',email:''};
-                                                        for (var inp of this.contactInputs)
-                                                           if (!inp.reportValidity())
-                                                              throw new Error('Пожалуйста, заполните все наобходимые поля.');
-                                                        
-                                                        //Memorize contacts (forms completion doesn't works for them):
-                                                        let param={};
-                                                        for (var inp of this.contactInputs)
-                                                            param[inp.name]=inp.value;
-                                                        this._parent.getToolByName('memory')?.memorize('siding_calc_user_contacts',param);
-                                                        
-                                                        
-                                                        let figures=(this.parent.compoundFigure ? [structuredClone(this.parent.compoundFigure)] : []);
-                                                        for (var figure of figures)
-                                                           if (figure.type=='compound')
-                                                           {
-                                                              figure.style.modes=[];
-                                                              for (var points of figure.polyLines)
-                                                                 figure.style.modes.push(GU.isNormalsOutside(points) ? 'add' : 'cut');
-                                                           }
-                                                        var data={
-                                                                    action:'request',
-                                                                    figures:figures,
-                                                                    material:{name:this._material,price:this._price,h:this._cutHeight,max_len:this._stripeMaxLength},
-                                                                    cutAxis:this.cutAxis,
-                                                                    cutOffset:this.cutOffset,
-                                                                    crossbars:this.crossbars,
-                                                                    res:this.calculationData,
-                                                                    opts:[],
-                                                                    contacts:contacts,
-                                                                 }; 
-                                                        var optInpts=this._toolPanel.querySelectorAll('input[name^=res_opts]');
-                                                        for (var inp of optInpts)
-                                                           data.opts.push(inp.value);
-                                                        
-                                                        messBlk.classList.remove('error');
-                                                        messBlk.classList.remove('success');
-                                                        messBlk.classList.add('hidden');
-                                                        
-                                                        reqServer(null,data)
-                                                           .then((ans_)=>{if (messBlk){var ok=ans_.status=='success'; messBlk.classList.remove('hidden'); messBlk.classList.toggle('error',!ok); messBlk.classList.toggle('success',ok); messBlk.innerHTML=(ok ? 'На указанный адрес отправлено письмо с результатами расчета.' : '<b>Ошибка:</b><br>'+ans_.errors.join('<br>'));}})
-                                                           .catch((xhr_)=>{if (messBlk){messBlk.classList.remove('hidden'); messBlk.classList.remove('success'); messBlk.classList.add('error'); messBlk.textContent='Не удалось отправить данные.';}});
-                                                     }
-                                                     catch (err)
-                                                     {
-                                                        messBlk.classList.remove('hidden');
-                                                        messBlk.classList.remove('success');
-                                                        messBlk.classList.add('error');
-                                                        messBlk.innerHTML=err.message;
-                                                     }
-                                                  });
+      this._insidesCollection.btnPrev.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step--; e_.target.blur();}});
+      this._insidesCollection.btnNext.addEventListener('click',(e_)=>{var stepsTool=this.parent.getToolByName('steps'); if (stepsTool){stepsTool.step++; e_.target.blur();}});
+      this._insidesCollection.btnSend.addEventListener('click',(e_)=>{this.send();});
    }
    
    onReady()
    {
       //Load params
+      let memory=this._parent.getToolByName('memory');
       let param;
       
-      //param=this._parent.getToolByName('memory')?.recall('siding_calc_axis');
-      //this.cutAxis=(param=='y' ? param : 'x');
+      param=memory?.recall('siding_calc_axis');
+      this.cutAxis=(param=='y' ? param : 'x');
       
-      param=parseFloat(this._parent.getToolByName('memory')?.recall('siding_calc_offset'));
+      //param=parseFloat(memory?.recall('siding_calc_offset'));
+      //if (!isNaN(param))
+      //   this._cutOffset=param;
+      
+      param=parseFloat(memory?.recall('siding_calc_col_step'));
       if (!isNaN(param))
-         this.cutOffset=param;
+         this._crossbarStep=param;
       
-      param=parseFloat(this._parent.getToolByName('memory')?.recall('siding_calc_cut_height')); //TODO: Isn't it sholud be in material specs?
-      if (!isNaN(param))
-         this.cutHeight=param;
+      param=parseFloat(memory?.recall('siding_calc_material'));
+      if (this._materials.has(param))
+         this._materialKey=param;
       
-      param=parseFloat(this._parent.getToolByName('memory')?.recall('siding_calc_max_len')); //TODO: Isn't it sholud be in material specs?
-      if (!isNaN(param))
-         this.stripeMaxLength=param;
-      
-      param=parseFloat(this._parent.getToolByName('memory')?.recall('siding_calc_col_step'));
-      if (!isNaN(param))
-         this.crossbarStep=param;
-      
-      //param=this._parent.getToolByName('memory')?.recall('siding_calc_crossbars');
-      //if (param)
-      //   for (var crossbar of param)
-      //      this.addCrossbar(crossbar);
-         
-      //this.material=this._parent.getToolByName('memory')?.recall('siding_calc_material');
-      
-      param=this._parent.getToolByName('memory')?.recall('siding_calc_user_contacts')??{};
-      for (var inp of this.contactInputs)
-         inp.value=param[inp.name]??'';
+      param=memory?.recall('siding_calc_user_contacts')??{};
+      for (var [key,inp] of Object.entries(this._insidesCollection.inputs.contacts))
+         inp.value=param[key]??'';
    }
    
+   //public props
    get name(){return 'calc';}
    
    set activeView(nextView_)
@@ -317,8 +219,7 @@ export class CalcTool extends Tool
    {
       this._cutAxis=(val_=='y' ? 'y' : 'x');
       
-      for (var radio of this.inputs.dir)
-         radio.checked=(radio.value==this._cutAxis);
+      this._insidesCollection.inputs.direction.valueAsMixed=this._cutAxis;
       
       var items=this._toolPanel.querySelectorAll('.columns .list .axis');
       for (var item of items)
@@ -332,37 +233,9 @@ export class CalcTool extends Tool
    {
       this._cutOffset=val_;
       
-      if (this.inputs.offset&&(parseFloat(this.inputs.offset.value)!=this._cutOffset))
-         this.inputs.offset.value=this._cutOffset;
+      //this._insidesCollection.inputs.cutOffset.valueAsMixed=this._cutOffset;
+      
       this._parent.getToolByName('memory')?.memorize('siding_calc_offset',this._cutOffset);
-   }
-   
-   get stripeMaxLength(){return this._stripeMaxLength;}
-   set stripeMaxLength(val_)
-   {
-      this._stripeMaxLength=Math.max(val_,0.01);
-      
-      if (this.inputs.maxLength&&(parseFloat(this.inputs.maxLength.value)!=this._stripeMaxLength))
-         this.inputs.maxLength.value=this._stripeMaxLength;
-      //this._parent.getToolByName('memory')?.memorize('siding_calc_max_len',this._stripeMaxLength);
-   }
-   
-   get cutHeight(){return this._cutHeight;}
-   set cutHeight(val_)
-   {
-      this._cutHeight=Math.max(val_,0.01);
-      
-      if (this.inputs.offset)
-      {
-         this.inputs.offset.max=this._cutHeight;
-         this.inputs.offset.min=-this._cutHeight;
-         this.inputs.offset.value=Math.min(this.inputs.offset.value,this.inputs.offset.max);
-      }
-      
-      if (this.inputs.cutHeight&&(parseFloat(this.inputs.cutHeight.value)!=this._cutHeight))
-         this.inputs.cutHeight.value=this._cutHeight;
-      
-      //this._parent.getToolByName('memory')?.memorize('siding_calc_cut_height',this._cutHeight);
    }
    
    get crossbarStep(){return this._crossbarStep;}
@@ -370,86 +243,48 @@ export class CalcTool extends Tool
    {
       this._crossbarStep=Math.max(val_,0.01);
       
-      if (parseFloat(this.inputs.crossbarStep.value)!=this._crossbarStep)
-         this.inputs.crossbarStep.value=this._crossbarStep;
+      this._insidesCollection.inputs.crossbarStep.valueAsMixed=this._crossbarStep;
       
       this._parent.getToolByName('memory')?.memorize('siding_calc_col_step',this._crossbarStep);
    }
    
-   get crossbars(){return this._crossbars;}
-   set crossbars(newVal_){return this._crossbars=Array.from(newVal_);}
+   get crossbars(){return this._crossbarsList.sorted;}
+   set crossbars(newVal_){this._crossbarsList.data=newVal_;}
    
-   set material(val_)
-   {
-      if (val_)
-      {
-         let mat=val_.split(',');
-         this._material=mat[0];
-         this._matThickness=mat[1];
-         this._price=mat[2];
-         this.cutHeight=mat[3];
-         this.stripeMaxLength=mat[4];
-      }
-   }
+   get materialKey(){return this._materialKey;}
+   set materialKey(newVal_){if (this._materials.has(newVal_)) this._materialKey=newVal_;}
    
-   get lnkSaveLocal(){return this._panelNodes.lnkSaveLocal;}
+   get material(){return this._materials.get(this._materialKey);}
    
-   //private methods
-   changeCrossbar(indx_,coord_)
-   {
-      if (this._crossbars.length>indx_)
-      {
-         this._crossbars[indx_]=coord_;
-         
-         //this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
-      }
-   }
+   get lnkSaveLocal(){return this._insidesCollection.lnkSaveLocal;}
+   
+   visuals=null;
+   
+   //private props
+   _insidesCollection={};
+   _inputs={};
+   
+   _cutOffset=0;
+   _cutAxis='x';
+   _cutHeight=1;
+   _stripeMaxLength=14;
+   _crossbarStep=1;   //TODO: obsolete?
+   _crossbarsList=null;
+   
+   _materials=new Map([
+                         //Material height and max_len are measured in meters.
+                         ['mv'      ,{group:'mv' ,name:'Сэндвич панели МВ' ,thickness:0.050,price:100,height:1.000,max_len:14}],
+                         ['pp'      ,{group:'pp' ,name:'Сэндвич панели ПП' ,thickness:0.050,price:101,height:1.000,max_len:14}],
+                         ['ppu'     ,{group:'ppu',name:'Сэндвич панели ППу',thickness:0.050,price:102,height:1.160,max_len:14}],
+                         ['profc25' ,{group:'cs' ,name:'Профнастил C-2.5'  ,thickness:0.5  ,price:103,height:1.200,max_len:14}],
+                         ['profc10' ,{group:'cs' ,name:'Профнастил C-10'   ,thickness:0.5  ,price:104,height:1.145,max_len:14}],
+                         ['profhc20',{group:'cs' ,name:'Профнастил НС-20'  ,thickness:0.5  ,price:105,height:1.080,max_len:14}],
+                         ['profhc44',{group:'cs' ,name:'Профнастил НС-44'  ,thickness:0.5  ,price:106,height:1.010,max_len:14}],
+                         ['profh57' ,{group:'cs' ,name:'Профнастил Н-57'   ,thickness:0.5  ,price:107,height:0.950,max_len:14}],
+                      ]);
+   _materialKey=this._materials.keys().next().value;
    
    //public methods
-   addCrossbar(coord_)
-   {
-      //Adds a crossbar position (point to split the siding).
-      if (!isNaN(coord_)&&(!this._crossbars.includes(coord_)))
-      {
-         var listNode=this._toolPanel.querySelector('.columns .list');
-         this._crossbars.push(coord_);
-         //this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
-         
-         if (listNode)
-         {
-            var item=buildNodes({tagName:'div',className:'point',childNodes:[{tagName:'label',childNodes:[{tagName:'span',className:'axis',textContent:this._cutAxis.toUpperCase()+':'},{tagName:'input',type:'number',name:'point',step:0.01,value:coord_},{tagName:'span',className:'unit',textContent:'м'},]},{tagName:'input',className:'tool clr',type:'button',value:'✕',title:'Удалить'}]});
-            var input=item.querySelector('input[name=point]');
-            var btn=item.querySelector('input[type=button]');
-            var indx=this._crossbars.length-1;
-            input.addEventListener('input',(e_)=>{var val=parseFloat(e_.target.value); if (!isNaN(val)){this.changeCrossbar(indx,val); this.calcFilling();}});
-            btn.addEventListener('click',(e_)=>{this.removeCrossbar(parseFloat(input.value)); listNode.removeChild(item); this.calcFilling(); e_.target.blur();});
-            listNode.appendChild(item);
-         }
-      }
-   }
-   
-   removeCrossbar(coord_)
-   {
-      var indx=this._crossbars.indexOf(coord_);
-      if (indx>-1)
-      {
-         this._crossbars.splice(indx,1);
-         //this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
-      }
-   }
-   
-   sortCrossbars()
-   {
-      this._crossbars.sort(function(a_,b_){return Math.sign(a_-b_);});
-      
-      var items=this._toolPanel.querySelectorAll('.columns .list input[name=point]');
-      for (var i=0;i<this._crossbars.length;i++)
-         if (items[i])
-            items[i].value=this._crossbars[i];
-      
-      //this._parent.getToolByName('memory')?.memorize('siding_calc_crossbars',this._crossbars);
-   }
-   
    onRepaintOverlay(overlay_)
    {
       if (this.visuals)
@@ -514,10 +349,8 @@ export class CalcTool extends Tool
             var scanBox={type:'rect',rect:{lb:{},rt:{}},style:{}};
             scanBox.rect.lb[norm]=GU.roundVal(bBox.lb[norm]+this.cutOffset);
             scanBox.rect.lb[tang]=bBox.lb[tang];
-            scanBox.rect.rt[norm]=GU.roundVal(scanBox.rect.lb[norm]+this.cutHeight);  //rt and lb is on the one cutting line
+            scanBox.rect.rt[norm]=GU.roundVal(scanBox.rect.lb[norm]+this.material.height);  //rt and lb is on the one cutting line
             scanBox.rect.rt[tang]=bBox.rt[tang];
-            
-            this.sortCrossbars();
             
             while (scanBox.rect.lb[norm]<bBox.rt[norm])
             {
@@ -579,7 +412,7 @@ export class CalcTool extends Tool
                   {
                      var lastStrp=stripes.pop();
                      
-                     for (var c of this._crossbars)
+                     for (var c of this.crossbars)
                      {
                         var crel=bBox.lb[tang]+c;
                         if ((lastStrp.rect.lb[tang]<crel)&&(crel<lastStrp.rect.rt[tang]))
@@ -602,18 +435,18 @@ export class CalcTool extends Tool
                var buff=[];
                for (var stripe of stripes)
                {
-                  var cnt=Math.floor(stripe.l/this.stripeMaxLength);
-                  var rest=GU.roundVal(stripe.l-cnt*this.stripeMaxLength);
+                  var cnt=Math.floor(stripe.l/this.material.max_len);
+                  var rest=GU.roundVal(stripe.l-cnt*this.material.max_len);
                   var rt={...stripe.rect.rt};
                   if (cnt>0)
                   {
                      for (var s=0;s<cnt;s++)
                      {
-                        stripe.rect.rt[tang]=stripe.rect.lb[tang]+this.stripeMaxLength;
-                        stripe.l=this.stripeMaxLength;
+                        stripe.rect.rt[tang]=stripe.rect.lb[tang]+this.material.max_len;
+                        stripe.l=this.material.max_len;
                         buff.push(structuredClone(stripe));
                         
-                        stripe.rect.lb[tang]+=this.stripeMaxLength;
+                        stripe.rect.lb[tang]+=this.material.max_len;
                      }
                   }
                   
@@ -633,8 +466,8 @@ export class CalcTool extends Tool
                //Save stripes for visualisation 
                this.visuals.scans.push(stripes);
                
-               scanBox.rect.lb[norm]=GU.roundVal(scanBox.rect.lb[norm]+this.cutHeight);   //Increment scanBox position
-               scanBox.rect.rt[norm]=GU.roundVal(scanBox.rect.rt[norm]+this.cutHeight);   //
+               scanBox.rect.lb[norm]=GU.roundVal(scanBox.rect.lb[norm]+this.material.height);   //Increment scanBox position
+               scanBox.rect.rt[norm]=GU.roundVal(scanBox.rect.rt[norm]+this.material.height);   //
             }
             console.log('scans',this.visuals.scans);
             
@@ -654,7 +487,7 @@ export class CalcTool extends Tool
                   groups.push({length:l,cnt:1});
                
                totalLength+=l;
-               spentSquare+=(l*this.cutHeight);
+               spentSquare+=(l*this.material.height);
             }
             totalSquare=(totalLength*this._cutHeight);
             
@@ -708,6 +541,235 @@ export class CalcTool extends Tool
             this.calculationData={scans:this.visuals.scans,panels:groups,count:lengths.length,total_l:totalLength,total_s:totalSquare,waste:(spentSquare-usedSquare).toFixed(3)};
          }
       }
+   }
+   
+   send()
+   {
+      //Validate contacts
+      try
+      {
+         let contacts={};
+         for (let [key,inp] of Object.entries(this._insidesCollection.inputs.contacts))
+            if (inp.reportValidity())
+               contacts[key]=inp.valueAsMixed;
+            else
+               throw new Error('Пожалуйста, заполните все наобходимые поля.');
+         
+         //Memorize contacts (forms completion doesn't works for them):
+         this._parent.getToolByName('memory')?.memorize('siding_calc_user_contacts',contacts);
+         
+         //Get drawing data:
+         let compoundFigure=structuredClone(this.parent.compoundFigure);
+         if (compoundFigure.type=='compound')
+         {
+            compoundFigure.style.modes=[];
+            for (var points of compoundFigure.polyLines)
+               compoundFigure.style.modes.push(GU.isNormalsOutside(points) ? 'add' : 'cut'); //Add hints for drawing backend (it doesn't recognize normals):
+         }
+         
+         //Fill request:
+         var data={
+                     action:'request',
+                     figures:this._parent.cloneFigures(),
+                     drawing:compoundFigure,
+                     material:{key:this._materialKey,...this.material},
+                     cutAxis:this.cutAxis,
+                     cutOffset:this.cutOffset,
+                     crossbars:this.crossbars,
+                     res:this.calculationData,
+                     opts:this._insidesCollection.inputs.resOpts.valueAsMixed,
+                     contacts:contacts,
+                  }; 
+         
+         this._report('');
+         reqServer(null,data)
+            .then((ans_)=>{this._report((ans_.status=='success' ? 'На указанный адрес отправлено письмо с результатами расчета.' : '<b>Ошибка:</b><br>'+ans_.errors.join('<br>')),ans_.status);})
+            .catch((xhr_)=>{this._report('Не удалось отправить данные.','error');});
+      }
+      catch (err)
+      {
+         this._report(err.message,'error');
+      }
+   }
+   
+   //private methods
+   _report(mess_,status_)
+   {
+      this._insidesCollection.blkMessage.innerHTML=mess_;
+      this._insidesCollection.blkMessage.classList.toggle('success',status_=='success');
+      this._insidesCollection.blkMessage.classList.toggle('error',/^error|fail|failure$/i.test(status_));
+   }
+}
+
+class InpArray
+{
+   //Array of arbitrary inputs, represented as one.
+   
+   constructor(entries_)
+   {
+      for (let [i,inp] of entries_)
+         this._inputs.push(inp);
+   }
+   
+   //public props
+   get type()
+   {
+      //Returns a synthetic type to make user don't mess this class with the radios themselves.
       
+      return 'inparray';
+   }
+   
+   get name()
+   {
+      //Return the radios name. (All radios in the group must have the same name.)
+      
+      return this._inputs[0]?.name;
+   }
+   set name(newVal_)
+   {
+      //Renames all inputs in the array.
+      
+      for (let inp of this._inputs)
+         inp.name=newVal_;
+      
+      this.on_rename?.();
+   }
+   
+   get value(){return this.valueAsMixed.join(',');}
+   set value(newVal_){this.valueAsMixed=newVal_?.split(',')??[];}
+   
+   get valueAsMixed()
+   {
+      //Returns a value as array.
+      
+      let res=[];
+      
+      for (let inp of this._inputs)
+         switch (inp.type)
+         {
+            case 'checkbox':
+            {
+               res.push(inp.checked ? inp.value : null);
+               break;
+            }
+            default:
+            {
+               res.push(inp.value);
+            }
+         }
+      
+      return res;
+   }
+   set valueAsMixed(newVal_)
+   {
+      //Assigns values from newVal_ to the inputs matching by indexes.
+      
+      for (let [i,inp] of this._inputs.entries())
+         switch (inp.type)
+         {
+            case 'checkbox':
+            {
+               inp.checked=(newVal_[i]==inp.value);
+               break;
+            }
+            default:
+            {
+               inp.value=newVal_[i];
+            }
+         }
+      
+      this.onSetValue?.(this.value);
+   }
+   
+   //private props
+   _inputs=[];
+}
+
+
+class CrossBarsList extends DynamicList
+{
+   //public props
+   get data(){return super.data;}
+   set data(data_)
+   {
+      super.data=this._sort(data_);
+      this._isSorted=true;
+      
+      this.onUpdate();
+   }
+   
+   get sorted(){return (this._isSorted ? this.data : this._sort(this.data));} //Returns sorted data w/o modifying of original.
+   
+   //private props
+   _isSorted=false;
+   
+   //public methods
+   add(mixed_)
+   {
+      let newItem=super.add(mixed_);
+      this.onUpdate();
+      
+      return newItem;
+   }
+   
+   remove(mixed_)
+   {
+      super.remove(mixed_);
+      this.onUpdate();
+   }
+   
+   sort()
+   {
+      this.data=this.data; //Reassigning of the data causes sorting.
+   }
+   
+   onUpdate()
+   {
+      this._parent?.calcFilling();
+   }
+   
+   //private methods
+   _sort(data_)
+   {
+      return data_.sort(function(a_,b_){return Math.sign(a_-b_);});
+   }
+}
+
+class CrossBar extends DynamicListItem
+{
+   constructor(parent_,params_)
+   {
+      params_.nodeStruct??={
+                              tagName:'div',
+                              className:'point',
+                              childNodes:[
+                                            {
+                                               tagName:'label',
+                                               childNodes:[
+                                                             {tagName:'span',className:'axis',textContent:'X:',_collectAs:'axis'},
+                                                             {tagName:'input',type:'number',name:'point',step:0.01,value:0,_collectAs:'inpCoord'},
+                                                             {tagName:'span',className:'unit',textContent:'м'},
+                                                          ],
+                                            },
+                                            {tagName:'input',className:'tool clr',type:'button',value:'✕',title:'Удалить',_collectAs:'btnDel'}
+                                         ],
+                           };
+      super(parent_,params_);
+      
+      decorateInputFieldVal(this._insidesCollection.inpCoord);
+      bindEvtInputToDeferredChange(this._insidesCollection.inpCoord)
+      this._insidesCollection.inpCoord.addEventListener('change',(e_)=>{this._parent?.onUpdate();});
+      this._insidesCollection.inpCoord.addEventListener('blur',(e_)=>{this._parent?.sort();});
+      this._insidesCollection.btnDel.addEventListener('click',(e_)=>{this._parent?.remove(this);});
+   }
+   
+   get data()
+   {
+      return this._insidesCollection.inpCoord.valueAsMixed;
+   }
+   set data(data_)
+   {
+      this._insidesCollection.inpCoord.valueAsMixed=data_;
+      //this._parent?.update()
    }
 }

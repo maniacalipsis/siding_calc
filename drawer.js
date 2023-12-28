@@ -951,6 +951,11 @@ export class Drawer
       return Array.from(this._figures);
    }
    
+   cloneFigures()
+   {
+      return structuredClone(this._figures);
+   }
+   
    at(index_)
    {
       //Returns figure by index.

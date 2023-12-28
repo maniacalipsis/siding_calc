@@ -87,19 +87,6 @@ function recall_data($fname_)
    return $data;
 }
 
-function decode_material($material_)
-{
-   $aliases=["mv"=>"Сэндвич панели МВ","pp"=>"Сэндвич панели ПП","ppu"=>"Сэндвич панели ППу","profc25"=>"Профнастил C-2.5","profc10"=>"Профнастил C-10","profhc20"=>"Профнастил HC-20","profhc44"=>"Профнастил HC-44","profh57"=>"Профнастил H-57"];
-   
-   $res=[
-           "name"=>$aliases[$material_["name"]],
-           "price"=>(float)$material_["price"],
-           "thikness"=>(float)$material_["n"],
-           "max_len"=>(float)$material_["max_len"]
-        ];
-   return $res;
-}
-
 function decode_opts($opts_)
 {
    $res=[];
@@ -204,26 +191,45 @@ if ($opts_["link"])
    return ob_get_clean();
 }
 
+function get_request()
+{
+   //Helper func for email_to_admin() and email_to_user().
+   
+   $drawing_figs=[$_REQUEST["drawing"]];
+   $b_box=bounding_box($drawing_figs,false);
+   return [
+             "drawing_figs"=>$drawing_figs,
+             "b_box"=>$b_box,
+             "size"=>["w"=>$b_box["rt"]["x"]-$b_box["lb"]["x"],"h"=>$b_box["rt"]["y"]-$b_box["lb"]["y"]],
+             "material"=>[
+                            "name"=>preg_replace("/[^a-zа-я0-9().,\\[\\] -]/i","",$_REQUEST["material"]["name"]),
+                            "price"=>(float)$_REQUEST["material"]["price"],
+                            "thikness"=>(float)$_REQUEST["material"]["n"],
+                            "max_len"=>(float)$_REQUEST["material"]["max_len"],
+                         ],
+             "calc_results"=>[
+                                "count"=>(int)($_REQUEST["res"]["count"]),
+                                "total_l"=>(float)($_REQUEST["res"]["total_l"]),
+                                "total_s"=>(float)($_REQUEST["res"]["total_s"]),
+                                "waste"=>(float)($_REQUEST["res"]["waste"]),
+                             ],
+      
+          ];
+}
+
 function email_to_admin()
 {
    $opts=decode_opts($_REQUEST["opts"]);
+   unset($opts["link"]);   //No need to store project data for admin.
    $contacts=array_map(htmlspecialchars,$_REQUEST["contacts"]);
    $figures_dump="";//htmlspecialchars(json_encode($_REQUEST["figures"],JSON_ENCODE_OPTIONS));
-   $b_box=bounding_box($_REQUEST["figures"],false);
-   $size=["w"=>$b_box["rt"]["x"]-$b_box["lb"]["x"],"h"=>$b_box["rt"]["y"]-$b_box["lb"]["y"]];
-   $material=decode_material($_REQUEST["material"]);
-   $calc_results=[
-                    "count"=>(int)($_REQUEST["res"]["count"]),
-                    "total_l"=>(float)($_REQUEST["res"]["total_l"]),
-                    "total_s"=>(float)($_REQUEST["res"]["total_s"]),
-                    "waste"=>(float)($_REQUEST["res"]["waste"]),
-                 ];
+   extract(get_request());
    
    $recipients=ADMIN_EMAIL;
    $subj="Расчет раскладки";
    $text=generate_report_text($opts,$size,$material,$_REQUEST["res"]["panels"],$calc_results,$contacts,$figures_dump);
    $attachments=[["tmp_name"=>__DIR__."/output/".date("Ymd-His-1-").bin2hex(rnd_bytes(5)).".pdf","name"=>"siding.pdf"]];
-   generate_pdf($opts,$_REQUEST["figures"],$_REQUEST["res"]["scans"],$text,[],[],$attachments[0]["tmp_name"]);
+   generate_pdf($opts,$drawing_figs,$_REQUEST["res"]["scans"],$text,[],[],$attachments[0]["tmp_name"]);
    
    $res=send_email($recipients,$subj,$text,$attachments,MAIL_SENDER);
    
@@ -236,21 +242,13 @@ function email_to_admin()
 function email_to_user()
 {
    $opts=decode_opts($_REQUEST["opts"]);
-   $b_box=bounding_box($_REQUEST["figures"],false);
-   $size=["w"=>$b_box["rt"]["x"]-$b_box["lb"]["x"],"h"=>$b_box["rt"]["y"]-$b_box["lb"]["y"]];
-   $material=decode_material($_REQUEST["material"]);
-   $calc_results=[
-                    "count"=>(int)($_REQUEST["res"]["count"]),
-                    "total_l"=>(float)($_REQUEST["res"]["total_l"]),
-                    "total_s"=>(float)($_REQUEST["res"]["total_s"]),
-                    "waste"=>(float)($_REQUEST["res"]["waste"]),
-                 ];
+   extract(get_request());
    
    $recipients=trim(explode(",",$_REQUEST["contacts"]["email"])[0]); //Deny to make massive emailing
    $subj="Расчет раскладки";
    $text=generate_report_text($opts,$size,$material,$_REQUEST["res"]["panels"],$calc_results);
    $attachments=[["tmp_name"=>__DIR__."/output/".date("Ymd-His-0-").bin2hex(rnd_bytes(5)).".pdf","name"=>"siding.pdf"]];
-   generate_pdf($opts,$_REQUEST["figures"],$_REQUEST["res"]["scans"],$text,PDF_PREAMBLE,["text"=>PDF_ADS_TEXT,"image"=>PDF_ADS_IMAGE],$attachments[0]["tmp_name"]);
+   generate_pdf($opts,$drawing_figs,$_REQUEST["res"]["scans"],$text,PDF_PREAMBLE,["text"=>PDF_ADS_TEXT,"image"=>PDF_ADS_IMAGE],$attachments[0]["tmp_name"]);
    
    $res=send_email($recipients,$subj,$text,$attachments,MAIL_SENDER);
    
