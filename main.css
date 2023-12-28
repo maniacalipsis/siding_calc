@@ -141,6 +141,10 @@ table td
    padding:0.125em 0.5em;
 }
 
+.virtus_calc .message:empty
+{
+   display:none;
+}
 .virtus_calc .message.error
 {
    color:#D44444;
@@ -326,6 +330,13 @@ table td
 }
 
 /* --- Flex styles --- */
+.virtus_calc
+{
+   --flex-gap:1rem;
+   --flex-gap-s:0.5rem;
+   --flex-gap-l:2rem;
+}
+
 .virtus_calc .flex
 {
    display:flex;
@@ -379,6 +390,45 @@ table td
 {
    align-items:stretch;
 }
+
+.flex.gap_s
+{
+   gap:var(--flex-gap-s);
+}
+.flex.gap_m
+{
+   gap:var(--flex-gap);
+}
+.flex.gap_l
+{
+   gap:var(--flex-gap-l);
+}
+.flex.gap_w
+{
+   gap:var(--flex-gap) var(--flex-gap-l);
+}
+
+.flex>.empty
+{
+   min-height:0!important;
+   height:auto!important;
+   margin-top:0!important;
+   margin-bottom:0!important;
+   padding:0!important;
+   border:none!important;
+   background:none transparent!important;
+}
+
+/* flex misc */
+.flex.reverse
+{
+   flex-direction:row-reverse;
+}
+.flex.col.reverse
+{
+   flex-direction:col-reverse;
+}
+
 
 /* scroll box */
 .virtus_calc .scrollbox.x

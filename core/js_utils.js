@@ -384,12 +384,16 @@ export function decorateCheckbox(checkbox_)
       let orig_setter=descr.set;
       descr.set=function (newVal_){orig_setter.call(this,newVal_); this.closest('label')?.classList.toggle('checked',this.checked);};
       Object.defineProperty(checkbox_,'checked',descr);
+      
+      checkbox_.checked=checkbox_.checked; //Reflect initial state.
    }
    {
       let descr=Object.getOwnPropertyDescriptor(checkbox_.__proto__,'disabled');
       let orig_setter=descr.set;
       descr.set=function (newVal_){orig_setter.call(this,newVal_); this.closest('label')?.classList.toggle('disabled',this.disabled);};
       Object.defineProperty(checkbox_,'disabled',descr);
+      
+      checkbox_.disabled=checkbox_.disabled; //Reflect initial state.
    }
    
    //Also repaint on user input:
@@ -406,10 +410,7 @@ export function initCheckboxes(params_)
    
    var checkboxes=(params_?.container??document).querySelectorAll((params_?.containerSelector ? params_.containerSelector+' ' : '')+(params_?.selector??'label.checkbox input[type=checkbox]'));
    for (let checkbox of checkboxes)
-   {
       decorateCheckbox(checkbox);        //TODO: Find how to detect already decorated checkboxes.
-      checkbox.checked=checkbox.checked; //Reflect initial state.
-   }
 }
 
 export function radioRepaint(initial_repaint_)
@@ -446,44 +447,50 @@ export function initRadios(params_)
    }
 }
 
-export class RadioGroup
+export class RadioGroup extends Map
 {
    //This class allows to work with the group of radios as with a single input fueld.
    //TODO: M.b. this class should consume radioRepaint() and initRadios().
    
-   constructor(mixed_)
+   constructor(entries_)
    {
+      super();
+      
       //NOTE: Don't forget that this.add() rejects the radios which names doesn't match the first one added.
-      
-      if (!(mixed_ instanceof Array))
-         mixed_=[mixed_];
-      
-      for (let radio of mixed_)
-         this.add(radio);
+      for (let [key,radio] of entries_)
+         this.add(radio,key);
    }
    
    //public props
    get type()
    {
-      return 'radiogroup'; //Return a synthetic type to make user don't mess this class with the radios themselves.
+      //Returns a synthetic type to make user don't mess this class with the radios themselves.
+      
+      return 'radiogroup';
    }
    
    get name()
    {
-      return this._radios[0]?.name??null;
+      //Return the radios name. (All radios in the group must have the same name.)
+      
+      return this.values().next().value?.name;
    }
    set name(newVal_)
    {
-      for (let radio of this._radios)
+      //Renames all radios in the group.
+      
+      for (let radio of this.values())
          radio.name=newVal_;
       
-      this.on_rename?.();
+      this.onRename?.();
    }
    
    get value()
    {
+      //Returns a value of the currently selected radio.
+      
       let res=null;
-      for (let radio of this._radios)
+      for (let radio of this.values())
          if (radio.checked)
          {
             res=radio.value;
@@ -493,20 +500,24 @@ export class RadioGroup
    }
    set value(newVal_)
    {
-      for (let radio of this._radios)
+      //Selects a radio which has a given newVal_.
+      //If there are no radios with newVal_, then all will be unselected and the value of the radiogroup will became null,
+      
+      for (let radio of this.values())
       {
          radio.checked=(radio.value==newVal_);
          radio.repaint?.();
       }
       
-      this.on_set_value?.(this.value);
+      this.onSetValue?.(this.value);
    }
    
    get disabled()
    {
-      //Returns false if at least one radio is not disabled.
+      //Returns true if all the radios are disabled.
+      
       let res=true;
-      for (let radio of this._radios)
+      for (let radio of this.values())
          if (!radio.disabled)
          {
             res=false
@@ -516,7 +527,9 @@ export class RadioGroup
    }
    set disabled(newVal_)
    {
-      for (let radio of this._radios)
+      //Applies a disabled value to all of the radios in the group.
+      
+      for (let radio of this.values())
          radio.disabled=newVal_;
       
       this.on_set_disabled?.(this.disabled);
@@ -526,21 +539,19 @@ export class RadioGroup
    set required(newVal_){this._required=newVal_; /*TODO: this is a draft.*/}
    
    //private props
-   _radios=[];
    _required=false;
    
    //public methods
-   add(radio_)
+   add(radio_,key_)
    {
       //NOTE: As the radios in the group must have exactly equal names, this method rejects the radios which names doesn't match the first one added.
       
-      if (((radio_ instanceof HTMLInputElement)&&(radio_.type=='radio'))&&    //Type check, //TODO: test type check on <radio>
-          (this._radios.indexOf(radio_)<0)&&                                  // disallow duplicates,
-          ((this._radios.length==0)||(radio_.name==this.name)))               // same name check.
+      if (((radio_ instanceof HTMLInputElement)&&(radio_.type=='radio'))&& //Type check, //TODO: test type check on <radio>
+          ((this.size==0)||(radio_.name==this.name)))                      // same name check.
       {
-         this._radios.push(radio_);
+         this.set(key_??radio_.value,radio_);
          radio_.parentRadioGroup=this;
-         radio_.addEventListener('click',this._on_radio_click);
+         radio_.addEventListener('click',this._onRadioClick);
       }
    }
    
@@ -550,15 +561,15 @@ export class RadioGroup
       if (indx>-1)
       {
          let removed=this._radios.splice(indx,1)[0];
-         removed.removeEventListener('click',this._on_radio_click);
+         removed.removeEventListener('click',this._onRadioClick);
          removed.parentRadioGroup=null;
       }
    }
    
    //private methods
-   _on_radio_click(e_)
+   _onRadioClick(e_)
    {
-      e_.target.parentRadioGroup.on_set_value?.(e_.target.parentRadioGroup.value);
+      e_.target.parentRadioGroup.onSetValue?.(e_.target.parentRadioGroup.value);
    }
 }
 
@@ -1051,7 +1062,7 @@ export function decorateInputFieldVal(inpField_,propName_)
       case 'number':
       {
          getter=function (){return ((this.value=='')||(this.value==null) ? null : ((this.step??1)==1 ? parseInt(this.value) : parseFloat(this.value)));};   //NOTE: If field value is empty, returns NULL.
-         setter=function (newVal_){this.value=((this.step??1)==1 ? parseInt(newVal_??0) : parseFloat(newVal_??0));};
+         setter=function (newVal_){this.value=((newVal_==null)||(newVal_=='') ? '' : ((this.step??1)==1 ? parseInt(newVal_??0) : parseFloat(newVal_??0)));};
          inpField_.addEventListener('keypress',(e_)=>{if ((['0','1','2','3','4','5','6','7','8','9','e','-','+','.',','].indexOf(e_.key)<0)&&(!(e_.ctrlKey||e_.altKey))) {return cancelEvent(e_);}});
          break;
       }
@@ -1073,8 +1084,17 @@ export function decorateInputFieldVal(inpField_,propName_)
                 };
          setter=function (newVal_)
                 {
-                   for (let opt of this.options)
-                      opt.selected=(newVal_.indexOf(opt.value)>=0);  //NOTE: if options' attribute "selected" may not change in browser's inspector.
+                   if (newVal_ instanceof Array)      //Main usage case: select options whoose values are represented in the array.
+                      for (let opt of this.options)
+                         opt.selected=(newVal_.indexOf(opt.value)>=0);  //NOTE: options' attribute "selected" may not change in browser's inspector.
+                   else if (newVal_==null)            //Reset unification. NOTE: However getter will return an empty array anyway.
+                      for (let opt of this.options)
+                         opt.selected=false;
+                   else
+                   {
+                      console.warn('A scalar value was assigned to the multiselect.valueAsMixed.');
+                      console.trace(this,newVal_);
+                   }
                 };
          break;
       }
@@ -1123,6 +1143,7 @@ export class InputFieldsList extends Map
    // matchIndexes - Indexes of the name key parts in regExp matches. Format: {row:<index>,key:<index>}.
    // replacement - A string for replaceing of the input's name key parts.
    // NOTE: All of regExp, matchIndexes and replacement are optional, but pay attention to keep'em in sync.
+   // namesWarning - boolean, whether to issue console warning when input field with a name that doesn't match the regExp is found. Optional, default false.
    //Usage:
    //Default parameters are disigned for inputs named like 'prefix[0][col_name]' or 'prefix[0][col_name][sub_prop]' or 'prefix[][col_name]'. In this example regExp matches will be ['[0][col_name]','0','col_name'], so matchIndexes.row=1, matchIndexes.key==1 and replacement string is conform 0th match.
    // someClass
@@ -1165,12 +1186,17 @@ export class InputFieldsList extends Map
             else
                super.set(key,(params_?.decorator??decorateInputFieldVal)(input,params_?.valueProp)); // decorate the input field and store it to associative array.
          }
-         else
-            console.warn('InputFieldsList: input\'s name doesn\'t match regExp',input,this._regExp);
+         else if (params_?.namesWarning)
+         {
+            console.warn('InputFieldsList: input\'s name doesn\'t match regExp');
+            console.trace(input,this._regExp);
+         }
       }
    }
    
    //public props
+   get parent(){return this._parent;}
+   
    get rowIndex()
    {
       //Get first input and exam its row index:
@@ -1198,7 +1224,6 @@ export class InputFieldsList extends Map
    //private props
    _parent=null;
    _container=null;
-   _inputs=null;
    _regExp=/^([a-z0-9_]+)\[([0-9]*)\]\[([a-z0-9_]+)\]/i;
    _matchIndexes={prefix:1,row:2,key:3};
    _replacement='$1[$2][$3]';
@@ -1212,16 +1237,19 @@ export class InputFieldsList extends Map
    set()
    {
       console.warn('InputFieldsList is currently readonly');
+      console.trace();
    }
    
    clear()
    {
       console.warn('InputFieldsList is currently readonly');
+      console.trace();
    }
    
    delete()
    {
       console.warn('InputFieldsList is currently readonly');
+      console.trace();
    }
 
    
@@ -1271,7 +1299,7 @@ export class SortingController
       {
          this._sortings??=JSON.parse(getCookie(this._cookieKey)??'{}'); //NOTE: JSON.parse(null) doesn't rise exception, while JSON.parse(undefined) and JSON.parse('') does.
       }
-      catch (ex)
+      catch (err)
       {
          this._sortings={};
       }
@@ -1607,6 +1635,9 @@ export class DynamicListItem
    }
    
    //public properties
+   get parent(){return this._parent;}
+   set parent(newVal_){console.warn('Attempt to assign value to DynamicListItem.parent that is readonly in default implementation.'); console.trace();}
+   
    get node()
    {
       //Readonly. This property is required by DynamicList to access the list item's node.
@@ -1617,11 +1648,13 @@ export class DynamicListItem
    {
       //Abstract. This getter may has no implementation if there is no need to return the data to the parent. E.g. if the item just displays something.
       console.warn('Using of abstract getter DynamicListItem.data');
+      console.trace();
    }
    set data(data_)
    {
       //Abstract. Implementation should apply this new data_ to the instance.
       console.warn('Using of abstract setter DynamicListItem.data');
+      console.trace();
    }
    
    //private properties
@@ -1874,6 +1907,8 @@ export class DynamicList extends DynamicListItem
       let insBeforeItem=this._listNode.childNodes[start_]??this._appendixStart;
       for (newItem of items)
          this._listNode.insertBefore(newItem.node,insBeforeItem);
+      
+      return removedItems;
    }
    
    clear()
@@ -1891,7 +1926,7 @@ export class DynamicList extends DynamicListItem
       let res=null;
       
       if (mixed_ instanceof DynamicListItem)
-         res=mixed_;
+         res=this._bypassItemInstance(mixed_);
       else if (mixed_!=null)
       {
          if (this._isSemidynamic) //Treat mixed_ as item data:
@@ -1906,6 +1941,14 @@ export class DynamicList extends DynamicListItem
       }
       
       return res;
+   }
+   
+   _bypassItemInstance(mixed_)
+   {
+      //Helper method, designed to override bypassing of adding DynamicListItem instances, e.g. when need to restrict it to specific subclasses.
+      
+      mixed_.parent=this;  //NOTE: Don't forget to owerride the DynamicListItem.parent setter, making it writeable in the subclasses that can be created outside of DynamicList or migrated from one list to another.
+      return mixed_;
    }
    
    _itemIndex(item_)
@@ -2065,7 +2108,8 @@ export class AsyncList extends DynamicList
       }
       catch (err)
       {
-         console.warn(err.message,ans_);
+         console.warn(err.message);
+         console.trace(ans_);
       }
       return res;
    }
@@ -2967,7 +3011,10 @@ export function reqServer(url_,data_,method_,enctype_,responseType_)
                             if (data_ instanceof FormData)   //Use standard class FormData to let the xhr to deal with multipart encoding by itself.
                                query=data_;
                             else
+                            {
                                console.warn('reqServer() supports only a FormData instances as the data_ argument when enctype_ is "multipart/form-data".');
+                               console.trace(data_);
+                            }
                          }
                          else
                          {
@@ -3213,8 +3260,10 @@ function cloneOverridenNew(default_,actual_,options_)
    if (default_ instanceof Array)
    {
       if ((options_?.strict)&&(actual_!=undefined)&&(!(actual_ instanceof Array)))
-         res=
-         console.warn(LC.get('cloneOverriden: incompartible types'),default_,actual_);
+      {
+         console.warn(LC.get('cloneOverriden: incompartible types'));
+         console.trace(default_,actual_);
+      }
          
       if (options_?.mergeArrays)    //Merge default_ and actual_ arrays, keeping element indices.
       {
@@ -3272,24 +3321,37 @@ export function serializeUrlQuery(query_data_,parent_)
 }
 
 //------- Date/time -------//
-export function formatDate(format_,date_)
+export function formatDate(format_,date_,params_)
 {
    //Analog for PHP's date()
+   //NOTE: format support is incomplete. Missing labels: SzWtLoXxyAaBghueIOPpTcrU.
+   //TODO: also not implemented labels: DlMF.
    
    if (date_===undefined||!(date_ instanceof Date))
       date_=new Date();
    if (format_===undefined)
       format_='Y-m-d H:i:s';
    
-   //TODO: format support is incomplete
    var res=format_;
    
-   res=res.replace('Y',date_.getFullYear());
-   res=res.replace('m',(date_.getMonth()+1).toString().padStart(2,'0'));
-   res=res.replace('d',date_.getDate().toString().padStart(2,'0'));
-   res=res.replace('H',date_.getHours().toString().padStart(2,'0'));
-   res=res.replace('i',date_.getMinutes().toString().padStart(2,'0'));
-   res=res.replace('s',date_.getSeconds().toString().padStart(2,'0'));
+   res=res.replaceAll(/(?<!\\)Y/g,date_.getFullYear());
+   res=res.replaceAll(/(?<!\\)m/g,(date_.getMonth()+1).toString().padStart(2,'0'));
+   res=res.replaceAll(/(?<!\\)d/g,date_.getDate().toString().padStart(2,'0'));
+   res=res.replaceAll(/(?<!\\)H/g,date_.getHours().toString().padStart(2,'0'));
+   res=res.replaceAll(/(?<!\\)i/g,date_.getMinutes().toString().padStart(2,'0'));
+   res=res.replaceAll(/(?<!\\)s/g,date_.getSeconds().toString().padStart(2,'0'));
+   res=res.replaceAll(/(?<!\\)j/g,date_.getDate().toString());
+   res=res.replaceAll(/(?<!\\)N/g,date_.getDay().toString());
+   res=res.replaceAll(/(?<!\\)w/g,(date_.getDay()-1).toString());
+   res=res.replaceAll(/(?<!\\)n/g,(date_.getMonth()+1).toString());
+   res=res.replaceAll(/(?<!\\)G/g,date_.getHours().toString());
+   res=res.replaceAll(/(?<!\\)v/g,date_.getMilliseconds().toString());
+   res=res.replaceAll(/(?<!\\)Z/g,date_.getTimezoneOffset().toString());
+   //res=res.replaceAll(/(?<!\\)D/g,(params_?.shortWeekDays??['Mon','Tue','Wed','Thu','Fri','Sat','Sun'])[date_.getDay()-1]);
+   //res=res.replaceAll(/(?<!\\)l/g,(params_?.fullWeekDays??['Monday','Tuesday','Wednesday','Thursday','Frighday','Saturday','Sunday'])[date_.getDay()-1]);
+   //res=res.replaceAll(/(?<!\\)M/g,(params_?.shortMonths??['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])[date_.getMonth()]);
+   //res=res.replaceAll(/(?<!\\)F/g,(params_?.fullMonths??['January','February','March','April','May','June','July','August','September','October','November','December'])[date_.getMonth()]);
+   res=res.replaceAll(/\\(.)/g,'$1');
    
    return res;
 }

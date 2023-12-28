@@ -83,7 +83,7 @@ export class StepsTool extends Tool
                                                         {tagName:'input',type:'button',className:'next new',value:'Начать новый проект',_collectAs:'btnReStart'},
                                                         {
                                                            tagName:'label',
-                                                           className:'file',
+                                                           className:'file flex col',
                                                            childNodes:[
                                                                           {tagName:'span',textContent:'Открыть файл',className:'caption'},
                                                                           {tagName:'input',type:'file',accept:'application/json',_collectAs:'inpDataFile'},
@@ -470,17 +470,27 @@ export class StepsTool extends Tool
    
    _restoreData(data_)
    {
-      data_=this._fixData(data_);
-      console.log(data_);
-      
-      this._parent.clear();
-      this._parent.append(...(data_.figures??[]));
-      
-      let calc=this._parent.getToolByName('calc');
-      calc.material=data_?.material;
-      calc.cutAxis=data_?.cutAxis??'x';
-      calc.cutOffset=data_?.cutOffset??0;
-      calc.crossbars=data_?.crossbars??[];
+      let res=false;
+      try
+      {
+         data_=this._fixData(data_);
+         console.log(data_);
+         
+         this._parent.clear();
+         this._parent.append(...(data_.figures??[]));
+         
+         let calc=this._parent.getToolByName('calc');
+         calc.materialKey=data_?.material?.key;
+         calc.cutAxis=data_?.cutAxis??'x';
+         calc.cutOffset=data_?.cutOffset??0;
+         calc.crossbars=data_?.crossbars??[];
+         
+         res=true;
+      }
+      finally
+      {
+         return res;
+      }
    }
    
    _loadLocalFile()
